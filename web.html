@@ -613,49 +613,222 @@ ACIDOSIS ADAPTOR
     </div>
     
     <script>
-        // Simulated specimen database
+        // Enhanced animated ASCII art system
         const specimens = {
             'AML-2847': {
                 name: 'Acidosis Adaptor',
-                ascii: `
-     ___..._
-   .::o:::::.
-  .:o:o:o:o:.
-  :=========:
-  \`==/~~~\\==\`
-    /     \\
-   | () () |
-    \\  <  /
-    /|||||\\ 
+                ascii: [
+                    // Frame 1
+                    `
+     ___..._      ○
+   .::o:::::.    ・ 
+  .:o:o:o:o:.   ○
+  :=========:  ・
+  \`==/~~~\\==\` ○
+    /     \\    
+   | (◉) (◉)|  
+    \\  ▼  /   
+    /|||||\\ pH:5.2
    /||||||||\\ 
-  ^^^^^^^^^^^`,
+  ^^^^▓▓▓^^^^`,
+                    // Frame 2
+                    `
+     ___..._ ○    
+   .::●:::::.  ・  
+  .:●:●:●:●:. ○  
+  :=========: ・ 
+  \`==/≈≈≈\\==\`○ 
+    /     \\    
+   | (◉) (◉)|  
+    \\  ▽  /   
+    /|||||\\ pH:5.3
+   /||||||||\\ 
+  ^^^▓▓▓▓▓^^^`
+                ],
+                complexAscii: `
+╔═══════════════════════════════════════════╗
+║     SPECIMEN AML-2847 :: ACIDOSIS ADAPTOR ║
+╠═══════════════════════════════════════════╣
+║         ∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿              ║
+║       ╱╲___...___╱╲      ◈ pH: 5.2       ║
+║      ╱ .::●::::●::. ╲     ◈ Depth: -3847m ║
+║     │ .:●:◉:◉:●:●:. │    ◈ Temp: 2.4°C   ║
+║     │ :═══════════: │     ◈ Status: ACTIVE║
+║     │ \`==/∿∿∿\\==\` │      ▓▓▓▓▓▓▓▓▓▓▓▓   ║
+║      ╲   /     \\   ╱      ░░░░░░░░░░░░    ║
+║       ╲ | ◉   ◉ | ╱       ▒▒▒▒▒▒▒▒▒▒▒▒    ║
+║        ╲\\  ▼▼  //╱        ████████████    ║
+║      ≈≈≈/|||||\\≈≈≈        [SCANNING...]   ║
+║     ≈≈≈/|||||||\\≈≈≈       ▪▫▪▫▪▫▪▫▪▫▪    ║
+║    ≈≈≈^^^▓▓▓▓▓^^^≈≈≈      ◢◣◢◣◢◣◢◣◢◣     ║
+╚═══════════════════════════════════════════╝`,
                 data: {
                     depth: '-3,847m',
                     ph: '5.2',
                     drift: '47.3%',
                     survival: '0.012%'
                 },
-                notes: 'Specimen exhibits unprecedented adaptation to extreme acidification zones.'
+                notes: 'Specimen exhibits unprecedented adaptation to extreme acidification zones. Crystalline formations suggest active carbon sequestration.'
             },
             'AML-3491': {
                 name: 'Microplastic Filter',
-                ascii: `
-    .-..-. 
-   ( o  o )
-    |  >  |
-   /|^^^^|\\
-  < |****| >
-   \\|vvvv|/
-    ^^^^^^`,
+                ascii: [
+                    `
+    ╔═╗═╔═╗ 
+   ╱ ◉  ◉ ╲
+   │  ╱╲  │ ●●●
+  ╱│◢████◣│╲ ●
+ ◀ │▓▓▓▓▓▓│ ▶
+  ╲│◥████◤│╱ ●
+   ╲▼▼▼▼▼▼╱ ●●●`,
+                    `
+    ╔═╗═╔═╗ 
+   ╱ ◉  ◉ ╲
+   │  ╱╲  │●●●●
+  ╱│◣████◢│╲●●
+ ◀ │▓▓▓▓▓▓│ ▶
+  ╲│◤████◥│╱●●
+   ╲▼▼▼▼▼▼╱●●●●`
+                ],
+                complexAscii: `
+╔═══════════════════════════════════════════╗
+║   SPECIMEN AML-3491 :: MICROPLASTIC FILTER║
+╠═══════════════════════════════════════════╣
+║     ◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈◈         ║
+║         ╔═══╗═══╔═══╗                     ║
+║        ╱ ◉◉◉◉◉◉◉◉◉ ╲    POLYMER: 47%     ║
+║       ╱   ╱╲╱╲╱╲   ╲   ●●●●●●●●●●●      ║
+║      │  ◢████████◣  │  ●●●●●●●●●●●●     ║
+║     ╱│ ◢██▓▓▓▓▓▓██◣ │╲ ●●●●●●●●●●●●    ║
+║    ◀ │ ▓▓▓▓▓▓▓▓▓▓▓▓ │ ▶ FILTERING...    ║
+║     ╲│ ◥██▓▓▓▓▓▓██◤ │╱  ▪▫▪▫▪▫▪▫▪▫     ║
+║      │  ◥████████◤  │   ░░░░░░░░░░░     ║
+║       ╲  ▼▼▼▼▼▼▼▼  ╱    ▒▒▒▒▒▒▒▒▒▒▒    ║
+║        ╲═══════════╱     ████████████    ║
+║     TOXICITY: ▓▓▓▓▓▓▓▓▓▓ HIGH            ║
+╚═══════════════════════════════════════════╝`,
                 data: {
                     depth: '-2,100m',
                     polymer: '47%',
                     toxicity: 'HIGH',
                     lifespan: '3.2 years'
                 },
-                notes: 'Organism has evolved specialized filtering organs containing crystallized microplastics.'
+                notes: 'Organism has evolved specialized filtering organs containing crystallized microplastics. Internal cavity shows 47% polymer integration.'
+            },
+            'AML-4102': {
+                name: 'Thermal Indicator Fish',
+                ascii: [
+                    `
+     ><((((°>
+    ><((((°>
+   ><((((°>
+  TEMP: 2.4°C`,
+                    `
+     ><((((●>
+    ><((((●>
+   ><((((●>
+  TEMP: 12.7°C`
+                ],
+                complexAscii: `
+╔═══════════════════════════════════════════╗
+║  SPECIMEN AML-4102 :: THERMAL INDICATOR   ║
+╠═══════════════════════════════════════════╣
+║    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░     ║
+║   ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒    ║
+║  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓   ║
+║        ╱╲___><((((°>___╱╲                ║
+║       ╱  ><((((°>((((°>  ╲   TEMP RANGE  ║
+║      │ ><((((°>><((((°>  │   2°C - 28°C  ║
+║      │  COLOR SHIFT:     │               ║
+║      │  ▓ COLD (2-8°C)   │   ◈◈◈◈◈◈◈◈   ║
+║      │  ▒ MEDIUM (8-18°C)│   ◈◈◈◈◈◈◈◈   ║
+║      │  ░ WARM (18-28°C) │   ◈◈◈◈◈◈◈◈   ║
+║       ╲__________________╱               ║
+║    CHROMATOPHORE DENSITY: ████████▒▒░░   ║
+╚═══════════════════════════════════════════╝`,
+                data: {
+                    depth: '-1,200m',
+                    temp_range: '2-28°C',
+                    chromatic: '94%',
+                    metabolism: 'VARIABLE'
+                },
+                notes: 'Chromatophore cells respond to temperature changes. Color spectrum shifts from deep blue (cold) to red (warm).'
             }
         };
+        
+        // Animated ASCII creature system
+        let asciiFrameIndex = 0;
+        let asciiAnimationInterval;
+        
+        function startAsciiAnimation() {
+            if (asciiAnimationInterval) clearInterval(asciiAnimationInterval);
+            
+            asciiAnimationInterval = setInterval(() => {
+                const creatures = document.querySelectorAll('.animated-ascii');
+                creatures.forEach(creature => {
+                    const specimenId = creature.dataset.specimen;
+                    const specimen = specimens[specimenId];
+                    if (specimen && specimen.ascii && Array.isArray(specimen.ascii)) {
+                        asciiFrameIndex = (asciiFrameIndex + 1) % specimen.ascii.length;
+                        creature.textContent = specimen.ascii[asciiFrameIndex] + '\n' + specimen.name.toUpperCase();
+                    }
+                });
+            }, 500);
+        }
+        
+        // Matrix rain effect for background
+        function createMatrixRain() {
+            const canvas = document.createElement('canvas');
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '1';
+            canvas.style.opacity = '0.1';
+            document.body.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const matrix = "ATCGATCG01░▒▓█◈◉●○∿≈";
+            const matrixArray = matrix.split("");
+            const fontSize = 10;
+            const columns = canvas.width / fontSize;
+            const drops = [];
+            
+            for(let x = 0; x < columns; x++) {
+                drops[x] = 1;
+            }
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#00ff41';
+                ctx.font = fontSize + 'px monospace';
+                
+                for(let i = 0; i < drops.length; i++) {
+                    const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    
+                    if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+            
+            setInterval(draw, 35);
+        }
+        
+        // Initialize animations
+        window.addEventListener('load', () => {
+            startAsciiAnimation();
+            createMatrixRain();
+        });
         
         // Tab switching functionality
         function showTab(tabName) {
@@ -682,14 +855,31 @@ ACIDOSIS ADAPTOR
             }, 1000);
         }
         
-        // Display specimen information
+        // Display specimen information with enhanced visuals
         function displaySpecimen(specimen) {
             const display = document.getElementById('terminal-display');
+            const asciiToShow = specimen.complexAscii || (Array.isArray(specimen.ascii) ? specimen.ascii[0] : specimen.ascii);
+            
             display.innerHTML = `
-                <div style="text-align: center; margin-top: 50px;">
-                    <div class="ascii-creature">${specimen.ascii}
-SPECIMEN ${specimen.name.toUpperCase()}
+                <div style="text-align: center; margin-top: 20px;">
+                    <div class="${Array.isArray(specimen.ascii) ? 'animated-ascii' : ''} ascii-creature" 
+                         data-specimen="${Object.keys(specimens).find(key => specimens[key] === specimen)}"
+                         style="font-size: 10px; line-height: 1; color: #00ff41;">
+                        ${asciiToShow}
                     </div>
+                    
+                    <!-- 3D Particle Simulation Placeholder -->
+                    <div style="margin: 20px auto; width: 600px; height: 200px; border: 2px solid #00ff41; position: relative; overflow: hidden; background: radial-gradient(ellipse at center, rgba(0,255,65,0.1) 0%, transparent 70%);">
+                        <div style="position: absolute; top: 10px; left: 10px; font-size: 10px; color: #00aa41;">
+                            TOUCHDESIGNER://PARTICLE_STREAM [PORT:9099]
+                        </div>
+                        <div id="particle-placeholder" style="text-align: center; padding-top: 80px; color: #00ff41; font-size: 12px;">
+                            ◈ AWAITING TD CONNECTION ◈<br>
+                            <span style="font-size: 10px; color: #00aa41;">Real-time 3D particle visualization via TouchDesigner</span>
+                        </div>
+                        <canvas id="simple-particles" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+                    </div>
+                    
                     <div class="data-grid">
                         ${Object.entries(specimen.data).map(([key, value]) => `
                             <div class="data-card">
@@ -699,14 +889,122 @@ SPECIMEN ${specimen.name.toUpperCase()}
                             </div>
                         `).join('')}
                     </div>
+                    
                     <div style="margin-top: 30px; padding: 20px; border: 1px solid #00ff41; background: rgba(0, 26, 0, 0.3);">
-                        <div style="font-size: 10px; color: #00aa41; margin-bottom: 10px;">FIELD NOTES // CLASSIFIED // ${new Date().toISOString().split('T')[0]}</div>
+                        <div style="font-size: 10px; color: #00aa41; margin-bottom: 10px;">
+                            FIELD NOTES // DR. ${generateRandomName()} // ${generateTimestamp()}
+                        </div>
                         <div style="text-align: left; font-size: 12px; line-height: 1.8;">
                             ${specimen.notes}
+                            <div style="margin-top: 10px; padding: 10px; background: rgba(255,0,0,0.1); border-left: 2px solid #ff0000;">
+                                <span style="color: #ff9900;">ANOMALY DETECTED:</span> 
+                                ${generateAnomalyReport()}
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; color: #ff9900; font-size: 10px;">
+                            WARNING: ${generateWarning()}
                         </div>
                     </div>
                 </div>
             `;
+            
+            // Simple particle animation fallback
+            initSimpleParticles();
+        }
+        
+        // Generate random scientist names
+        function generateRandomName() {
+            const names = ['K. YAMAMOTO', 'M. CHEN', 'A. PETROV', 'S. KUMAR', 'L. ANDERSON', 'R. GARCIA'];
+            return names[Math.floor(Math.random() * names.length)];
+        }
+        
+        // Generate timestamps
+        function generateTimestamp() {
+            const year = 2157;
+            const month = Math.floor(Math.random() * 12) + 1;
+            const day = Math.floor(Math.random() * 28) + 1;
+            return `${year}.${month.toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`;
+        }
+        
+        // Generate anomaly reports
+        function generateAnomalyReport() {
+            const anomalies = [
+                'Specimen shows signs of quantum entanglement with unknown deep-sea entities.',
+                'DNA sequences contain non-terrestrial markers. Origin unknown.',
+                'Electromagnetic interference detected. Equipment malfunction rate: 47%.',
+                'Specimen exhibits temporal displacement properties. Age readings inconsistent.',
+                'Bioluminescence patterns match no known communication protocols.'
+            ];
+            return anomalies[Math.floor(Math.random() * anomalies.length)];
+        }
+        
+        // Generate warnings
+        function generateWarning() {
+            const warnings = [
+                'Direct contact may result in severe alkaline burns.',
+                'Specimen emits ultrasonic frequencies. Hearing protection required.',
+                'Containment breach detected in sectors 7-12.',
+                'Psychotropic effects reported. Mental screening mandatory.',
+                'Radiation levels exceed safety protocols.'
+            ];
+            return warnings[Math.floor(Math.random() * warnings.length)];
+        }
+        
+        // Simple particle system for when TD is not connected
+        function initSimpleParticles() {
+            const canvas = document.getElementById('simple-particles');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600;
+            canvas.height = 200;
+            
+            const particles = [];
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    size: Math.random() * 3 + 1,
+                    opacity: Math.random()
+                });
+            }
+            
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    
+                    p.opacity = Math.sin(Date.now() * 0.001 + p.x) * 0.5 + 0.5;
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 255, 65, ${p.opacity})`;
+                    ctx.fill();
+                    
+                    // Draw connections
+                    particles.forEach(p2 => {
+                        const dist = Math.sqrt((p.x - p2.x)**2 + (p.y - p2.y)**2);
+                        if (dist < 50 && dist > 0) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(0, 255, 65, ${0.1 * (1 - dist/50)})`;
+                            ctx.stroke();
+                        }
+                    });
+                });
+                
+                requestAnimationFrame(animateParticles);
+            }
+            
+            animateParticles();
         }
         
         // Update display based on tab
