@@ -1,0 +1,685 @@
+/* Y2K Skeuomorphic Style - Early 2000s Aesthetic with CRT Effects */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif;
+    background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+    color: #333;
+    line-height: 1.4;
+    min-height: 100vh;
+    position: relative;
+    /* Reduce overall color saturation site-wide. Adjust --site-saturation (1 = original, 0 = grayscale) */
+    --site-saturation: 0.7;
+    filter: saturate(var(--site-saturation));
+}
+
+/* CRT Monitor Effects */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15),
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 2px
+        );
+    pointer-events: none;
+    z-index: 9999;
+    animation: scanline 8s linear infinite;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 20, 40, 0.3) 100%);
+    pointer-events: none;
+    z-index: 9998;
+}
+
+@keyframes scanline {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(10px);
+    }
+}
+
+/* CRT Flicker Effect */
+@keyframes flicker {
+    0% {
+        opacity: 0.97;
+    }
+    5% {
+        opacity: 0.95;
+    }
+    10% {
+        opacity: 0.98;
+    }
+    15% {
+        opacity: 0.93;
+    }
+    20% {
+        opacity: 0.97;
+    }
+    25% {
+        opacity: 0.96;
+    }
+    30% {
+        opacity: 0.98;
+    }
+    35% {
+        opacity: 0.94;
+    }
+    40% {
+        opacity: 0.97;
+    }
+    45% {
+        opacity: 0.96;
+    }
+    50% {
+        opacity: 0.98;
+    }
+    55% {
+        opacity: 0.95;
+    }
+    60% {
+        opacity: 0.97;
+    }
+    65% {
+        opacity: 0.93;
+    }
+    70% {
+        opacity: 0.98;
+    }
+    75% {
+        opacity: 0.96;
+    }
+    80% {
+        opacity: 0.97;
+    }
+    85% {
+        opacity: 0.95;
+    }
+    90% {
+        opacity: 0.98;
+    }
+    95% {
+        opacity: 0.94;
+    }
+    100% {
+        opacity: 0.97;
+    }
+}
+
+.container,
+.header,
+.status-bar {
+    animation: flicker 0.15s infinite;
+}
+
+/* Status Bar - Classic Windows XP Luna Blue Style */
+.status-bar {
+    background: linear-gradient(180deg, #4682b4 0%, #2d5f8d 50%, #1e4a6f 100%);
+    border-bottom: 3px solid #0f2d4a;
+    box-shadow: 
+        inset 0 1px 0 rgba(135, 206, 250, 0.4),
+        0 3px 8px rgba(0,0,0,0.4);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.status-left {
+    display: flex;
+    gap: 25px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #6ef76e, #2ecc40);
+    box-shadow: 
+        0 0 3px #2ecc40,
+        0 0 8px rgba(46,204,64,0.5),
+        inset 0 1px 1px rgba(255,255,255,0.6);
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Header - Retro Blue Gradient */
+.header {
+    background: linear-gradient(180deg, 
+        #6ba3d4 0%, 
+        #4a8bc2 25%,
+        #2d6fa8 50%,
+        #1e5a8e 75%,
+        #0f4570 100%);
+    border-bottom: 4px solid #0a2a45;
+    box-shadow: 
+        inset 0 1px 0 rgba(135, 206, 250, 0.5),
+        0 5px 15px rgba(0,0,0,0.4);
+    padding: 25px 20px;
+}
+
+.header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header h1 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-shadow: 
+        0 2px 4px rgba(0,0,0,0.5),
+        0 0 20px rgba(255,255,255,0.3);
+}
+
+.header .subtitle {
+    font-size: 12px;
+    color: #d4e6f1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* Main Container */
+.container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 20px 20px;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+}
+
+/* Sidebar - Classic Silver/Gray Panel */
+.sidebar {
+    background: linear-gradient(180deg, #d3d3d3 0%, #b8b8b8 100%);
+    border: 1px solid #8c8c8c;
+    border-radius: 8px;
+    box-shadow: 
+        0 4px 12px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.sidebar-section {
+    border-bottom: 1px solid #a0a0a0;
+    padding: 18px;
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+}
+
+.sidebar-section h3 {
+    font-size: 12px;
+    color: #3a3a3a;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    letter-spacing: 0.8px;
+    font-weight: bold;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Specimen Items - Retro Button Style */
+.specimen-item {
+    background: linear-gradient(180deg, #f5f5f5 0%, #d8d8d8 100%);
+    border: 1px solid #9a9a9a;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 11px;
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.15),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.specimen-item:hover {
+    background: linear-gradient(180deg, #e8f4ff 0%, #c8e0f7 100%);
+    box-shadow: 
+        0 3px 8px rgba(0,0,0,0.2),
+        inset 0 1px 0 rgba(255,255,255,1);
+    transform: translateY(-1px);
+}
+
+.specimen-item.active {
+    background: linear-gradient(180deg, #4a8bc2 0%, #2d6fa8 100%);
+    border-color: #1e5a8e;
+    box-shadow: 
+        inset 0 2px 4px rgba(0,0,0,0.4),
+        0 2px 4px rgba(0,0,0,0.2);
+}
+
+.specimen-item.active .specimen-id,
+.specimen-item.active .specimen-name {
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.specimen-id {
+    color: #6a6a6a;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.specimen-name {
+    color: #1a1a1a;
+    margin: 4px 0;
+    font-weight: 600;
+}
+
+/* Parameter Items */
+.param-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 11px;
+    border-bottom: 1px solid #c0c0c0;
+}
+
+.param-item:last-child {
+    border-bottom: none;
+}
+
+.param-label {
+    color: #4a4a4a;
+    font-weight: 600;
+}
+
+.param-value {
+    color: #1a1a1a;
+    font-weight: bold;
+}
+
+/* Main Content - Silver Panel */
+.main-content {
+    background: linear-gradient(180deg, #e8e8e8 0%, #d0d0d0 100%);
+    border: 1px solid #999;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 
+        0 5px 20px rgba(0,0,0,0.35),
+        inset 0 1px 0 rgba(255,255,255,1);
+}
+
+.content-header {
+    background: linear-gradient(180deg, #4a8bc2 0%, #2d6fa8 100%);
+    border-bottom: 2px solid #1e5a8e;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: inset 0 1px 0 rgba(135, 206, 250, 0.4);
+}
+
+.content-header h2 {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.content-header .timestamp {
+    font-size: 11px;
+    color: #d4e6f1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* TouchDesigner Stream - CRT Monitor Style */
+.td-stream {
+    background: linear-gradient(135deg, #0a1520 0%, #1a2a3a 100%);
+    border: 3px solid #2a3a4a;
+    border-radius: 6px;
+    margin: 20px;
+    height: 400px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+        inset 0 3px 8px rgba(0,0,0,0.6),
+        inset 0 0 30px rgba(0,0,0,0.4),
+        0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* CRT Screen Curvature Effect */
+.td-stream::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 3px;
+}
+
+/* CRT Screen Glow */
+.td-stream::after {
+    content: "";
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: radial-gradient(ellipse at center, rgba(70,130,180,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.td-placeholder {
+    text-align: center;
+    color: #6ba3d4;
+    font-size: 12px;
+    z-index: 2;
+    font-weight: 600;
+}
+
+.td-placeholder .status {
+    font-size: 11px;
+    margin-top: 12px;
+    color: #4a8bc2;
+}
+
+#interaction-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+}
+
+.stream-overlay {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, rgba(45,55,70,0.95), rgba(25,35,45,0.95));
+    padding: 10px 12px;
+    font-size: 10px;
+    border: 1px solid rgba(70,130,180,0.6);
+    border-radius: 4px;
+    color: #87ceeb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    font-weight: 600;
+}
+
+.coordinates {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, rgba(45,55,70,0.95), rgba(25,35,45,0.95));
+    padding: 8px 12px;
+    font-size: 10px;
+    border: 1px solid rgba(70,130,180,0.6);
+    border-radius: 4px;
+    color: #87ceeb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    font-weight: 600;
+}
+
+/* Controls - Classic Silver Panel */
+.controls {
+    background: linear-gradient(180deg, #e0e0e0 0%, #c8c8c8 100%);
+    border: 1px solid #999;
+    border-radius: 6px;
+    padding: 20px;
+    margin: 0 20px 20px;
+    box-shadow: 
+        inset 0 1px 0 rgba(255,255,255,0.9),
+        0 2px 4px rgba(0,0,0,0.15);
+}
+
+.control-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 18px;
+    align-items: center;
+}
+
+.control-row:last-child {
+    margin-bottom: 0;
+}
+
+.control-label {
+    font-size: 12px;
+    color: #2a2a2a;
+    min-width: 140px;
+    font-weight: 600;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Slider - Classic XP Style */
+input[type="range"] {
+    flex: 1;
+    height: 6px;
+    background: linear-gradient(180deg, #a0a8b0 0%, #c8d0d8 100%);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 3px;
+    box-shadow: 
+        inset 0 1px 3px rgba(0,0,0,0.4),
+        0 1px 0 rgba(255,255,255,0.9);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle at 35% 35%, #6ba3d4, #2d6fa8);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.4),
+        inset 0 1px 1px rgba(135, 206, 250, 0.6);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle at 35% 35%, #6ba3d4, #2d6fa8);
+    cursor: pointer;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.4),
+        inset 0 1px 1px rgba(135, 206, 250, 0.6);
+}
+
+.slider-value {
+    font-size: 12px;
+    color: #1a1a1a;
+    min-width: 60px;
+    text-align: right;
+    font-weight: bold;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Data Section */
+.data-section {
+    padding: 20px;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+/* Data Box - Glass/Glossy Effect with Retro Colors */
+.data-box {
+    background: linear-gradient(135deg, #f8f8f8 0%, #e0e0e0 100%);
+    border: 1px solid #a8a8a8;
+    border-radius: 6px;
+    padding: 16px;
+    box-shadow: 
+        0 3px 8px rgba(0,0,0,0.15),
+        inset 0 1px 0 rgba(255,255,255,1);
+}
+
+.data-box-label {
+    font-size: 10px;
+    color: #4a4a4a;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 0 rgba(255,255,255,1);
+}
+
+.data-box-value {
+    font-size: 22px;
+    color: #1a1a1a;
+    font-weight: bold;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.data-box-bar {
+    height: 8px;
+    background: linear-gradient(180deg, #b0b8c0 0%, #d0d8e0 100%);
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.data-box-bar-fill {
+    height: 100%;
+    background: linear-gradient(180deg, #4a9ad4 0%, #2d6fa8 100%);
+    transition: width 0.4s ease;
+    border-radius: 4px;
+    box-shadow: 
+        0 0 8px rgba(45,111,168,0.5),
+        inset 0 1px 0 rgba(135, 206, 250, 0.5);
+}
+
+.data-box-bar-fill.decline {
+    background: linear-gradient(180deg, #d44a4a 0%, #a82d2d 100%);
+    box-shadow: 
+        0 0 8px rgba(168,45,45,0.5),
+        inset 0 1px 0 rgba(255,100,100,0.5);
+}
+
+/* Notes Section - Paper-like Effect with Retro Colors */
+.notes-section {
+    background: linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
+    border: 1px solid #b0b0b0;
+    border-radius: 6px;
+    margin: 0 20px 20px;
+    padding: 20px;
+    box-shadow: 
+        0 3px 8px rgba(0,0,0,0.12),
+        inset 0 1px 0 rgba(255,255,255,1);
+}
+
+.notes-header {
+    font-size: 11px;
+    color: #4a4a4a;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 0 rgba(255,255,255,1);
+}
+
+.notes-content {
+    font-size: 12px;
+    color: #2a2a2a;
+    line-height: 1.7;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* Already updated above */
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .status-left {
+        gap: 15px;
+    }
+    
+    .status-item {
+        font-size: 10px;
+    }
+    
+    .header h1 {
+        font-size: 18px;
+    }
+    
+    .td-stream {
+        height: 300px;
+    }
+    
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ensure the fixed overlays and pseudo elements inherit the same desaturation */
+body::before,
+body::after,
+.status-bar,
+.header,
+.container,
+.sidebar,
+.main-content,
+.td-stream,
+.stream-overlay,
+.coordinates,
+.data-box,
+.notes-section {
+    -webkit-filter: saturate(var(--site-saturation));
+    filter: saturate(var(--site-saturation));
+}

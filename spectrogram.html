@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoustic Detection Field</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        let mic;
+        let audioEnabled = false;
+        let audioLevel = 0;
+        let acousticField = [];
+        let pg; // Graphics buffer
+        let detectionRipples = [];
+        let parameterBoxes = [];
+        let time = 0;
+        
+        // Optimized constants
+        const FIELD_RESOLUTION = 60;
+        const MAX_RIPPLES = 15;
+        const MAX_PARAM_BOXES = 30;
+        
+        class AcousticRipple {
+            constructor(x, y, intensity) {
+                this.x = x;
+                this.y = y;
+                this.radius = 0;
+                this.maxRadius = random(100, 300);
+                this.intensity = intensity;
+                this.age = 0;
+                this.maxAge = 120;
+                this.frequency = random(0.5, 2);
+            }
+            
+            update() {
+                this.age++;
+                this.radius += this.maxRadius / this.maxAge;
+                this.intensity *= 0.97;
+            }
+            
+            display() {
+                let alpha = map(this.age, 0, this.maxAge, 255, 0);
+                
+                // Main ring
+                noFill();
+                stroke(0, 255, 65, alpha * this.intensity);
+                strokeWeight(2);
+                circle(this.x, this.y, this.radius * 2);
+                
+                // Inner ripple
+                stroke(0, 255, 65, alpha * 0.5 * this.intensity);
+                strokeWeight(1);
+                circle(this.x, this.y, this.radius * 1.5);
+                
+                // Outer glow
+                stroke(0, 255, 65, alpha * 0.3 * this.intensity);
+                circle(this.x, this.y, this.radius * 2.2);
+            }
+            
+            isDead() {
+                return this.age >= this.maxAge;
+            }
+        }
+        
+        class ParameterBox {
+            constructor() {
+                this.x = random(width * 0.05, width * 0.95);
+                this.y = random(height * 0.05, height * 0.65);
+                this.w = random(70, 140);
+                this.h = random(35, 60);
+                this.numbers = this.generateNumbers();
+                this.age = 0;
+                this.maxAge = random(120, 240);
+                this.blinkPhase = random(TWO_PI);
+                this.updateInterval = floor(random(40, 80));
+            }
+            
+            generateNumbers() {
+                const formats = [
+                    // Pure integers
+                    () => floor(random(0, 9999)).toString(),
+                    () => floor(random(10000, 99999)).toString(),
+                    () => floor(random(100, 999)).toString(),
+                    // Decimals with varying precision
+                    () => random(0, 999).toFixed(random([1, 2, 3])),
+                    () => random(0, 99).toFixed(random([2, 3, 4])),
+                    () => random(-500, 500).toFixed(random([1, 2])),
+                    // Strange precision numbers
+                    () => random(0.001, 9.999).toFixed(4),
+                    () => random(10, 99).toFixed(5),
+                    // Negative numbers
+                    () => floor(random(-9999, -100)).toString(),
+                    () => random(-99, -1).toFixed(random([2, 3])),
+                    // Numbers with leading zeros (as strings)
+                    () => {
+                        let num = floor(random(0, 999));
+                        return num.toString().padStart(4, '0');
+                    },
+                    // Scientific-ish without units
+                    () => {
+                        let base = random(1, 9);
+                        let exp = floor(random(-4, 4));
+                        return base.toFixed(2) + 'e' + (exp >= 0 ? '+' : '') + exp;
+                    },
+                    // Hexadecimal looking
+                    () => {
+                        let hex = floor(random(0, 65535)).toString(16).toUpperCase();
+                        return '0x' + hex.padStart(4, '0');
+                    },
+                    // Sequences
+                    () => {
+                        let a = floor(random(0, 99));
+                        let b = floor(random(0, 99));
+                        return a + '.' + b;
+                    }
+                ];
+                
+                // Return 1-3 numbers
+                let numCount = floor(random(1, 4));
+                let nums = [];
+                for (let i = 0; i < numCount; i++) {
+                    nums.push(random(formats)());
+                }
+                return nums;
+            }
+            
+            update() {
+                this.age++;
+                
+                // Randomly update numbers
+                if (this.age % this.updateInterval === 0 && random() > 0.5) {
+                    // Update one random number
+                    let index = floor(random(this.numbers.length));
+                    this.numbers[index] = this.generateNumbers()[0];
+                }
+                
+                this.blinkPhase += 0.08;
+            }
+            
+            display() {
+                let blink = sin(this.blinkPhase) * 0.4 + 0.6;
+                
+                push();
+                
+                // Box - no fade, just appears
+                noFill();
+                stroke(0, 255, 65, 150);
+                strokeWeight(1);
+                rect(this.x, this.y, this.w, this.h);
+                
+                // Corner markers
+                stroke(0, 255, 65, 200);
+                strokeWeight(2);
+                let cornerSize = 5;
+                // Top-left
+                line(this.x, this.y, this.x + cornerSize, this.y);
+                line(this.x, this.y, this.x, this.y + cornerSize);
+                // Top-right
+                line(this.x + this.w, this.y, this.x + this.w - cornerSize, this.y);
+                line(this.x + this.w, this.y, this.x + this.w, this.y + cornerSize);
+                
+                // Clip content to box boundaries
+                drawingContext.save();
+                drawingContext.beginPath();
+                drawingContext.rect(this.x + 2, this.y + 2, this.w - 4, this.h - 4);
+                drawingContext.clip();
+                
+                // Display numbers stacked vertically
+                noStroke();
+                fill(0, 255, 65, 200 * blink);
+                textAlign(CENTER, CENTER);
+                
+                let totalHeight = (this.numbers.length - 1) * 15;
+                let startY = this.y + this.h / 2 - totalHeight / 2;
+                
+                for (let i = 0; i < this.numbers.length; i++) {
+                    let fontSize = this.numbers.length === 1 ? 15 : 12;
+                    textSize(fontSize);
+                    text(this.numbers[i], this.x + this.w / 2, startY + i * 15);
+                }
+                
+                drawingContext.restore();
+                
+                // Random scanline effect
+                if (random() > 0.95) {
+                    stroke(0, 255, 65, random(100, 200));
+                    strokeWeight(1);
+                    let scanY = this.y + random(this.h);
+                    line(this.x, scanY, this.x + this.w, scanY);
+                }
+                
+                pop();
+            }
+            
+            isDead() {
+                return this.age >= this.maxAge;
+            }
+        }
+        
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            pg = createGraphics(width, height);
+            pixelDensity(1);
+            
+            // Initialize acoustic field
+            for (let i = 0; i < FIELD_RESOLUTION * FIELD_RESOLUTION; i++) {
+                acousticField[i] = 0;
+            }
+            
+            // Spawn initial parameter boxes
+            for (let i = 0; i < 12; i++) {
+                parameterBoxes.push(new ParameterBox());
+            }
+        }
+        
+        function draw() {
+            background(0);
+            
+            time++;
+            
+            // Get audio level
+            if (audioEnabled && mic) {
+                audioLevel = mic.getLevel();
+            }
+            
+            // Update acoustic field with Perlin noise
+            for (let y = 0; y < FIELD_RESOLUTION; y++) {
+                for (let x = 0; x < FIELD_RESOLUTION; x++) {
+                    let n = noise(x * 0.1, y * 0.1, time * 0.01);
+                    
+                    // Audio influence on field
+                    if (audioEnabled && audioLevel > 0.05) {
+                        n += audioLevel * 0.5;
+                    }
+                    
+                    acousticField[y * FIELD_RESOLUTION + x] = n;
+                }
+            }
+            
+            // Clear graphics buffer with trail effect
+            pg.background(0, 20);
+            
+            // Draw field visualization (optimized)
+            if (frameCount % 2 === 0) {
+                drawAcousticField();
+            }
+            
+            // Update and draw ripples
+            for (let i = detectionRipples.length - 1; i >= 0; i--) {
+                detectionRipples[i].update();
+                pg.push();
+                detectionRipples[i].display();
+                pg.pop();
+                
+                if (detectionRipples[i].isDead()) {
+                    detectionRipples.splice(i, 1);
+                }
+            }
+            
+            // Spawn ripples on audio peaks
+            if (audioEnabled && audioLevel > 0.2 && frameCount % 5 === 0 && detectionRipples.length < MAX_RIPPLES) {
+                let rx = random(width * 0.2, width * 0.8);
+                let ry = random(height * 0.2, height * 0.65);
+                detectionRipples.push(new AcousticRipple(rx, ry, audioLevel));
+            }
+            
+            // Random ripples when no audio
+            if (!audioEnabled && frameCount % 60 === 0 && random() > 0.5 && detectionRipples.length < MAX_RIPPLES) {
+                let rx = random(width);
+                let ry = random(height * 0.1, height * 0.65);
+                detectionRipples.push(new AcousticRipple(rx, ry, random(0.3, 0.8)));
+            }
+            
+            // Draw main buffer to screen
+            image(pg, 0, 0);
+            
+            // Update and draw parameter boxes
+            for (let i = parameterBoxes.length - 1; i >= 0; i--) {
+                parameterBoxes[i].update();
+                parameterBoxes[i].display();
+                
+                if (parameterBoxes[i].isDead()) {
+                    parameterBoxes.splice(i, 1);
+                }
+            }
+            
+            // Spawn new parameter boxes abruptly
+            if (parameterBoxes.length < MAX_PARAM_BOXES && frameCount % 45 === 0 && random() > 0.4) {
+                parameterBoxes.push(new ParameterBox());
+            }
+            
+            // Occasionally remove a random box abruptly
+            if (parameterBoxes.length > 5 && frameCount % 90 === 0 && random() > 0.7) {
+                let randomIndex = floor(random(parameterBoxes.length));
+                parameterBoxes.splice(randomIndex, 1);
+            }
+            
+            // Draw waveform display box at bottom
+            drawWaveformBox();
+            
+            // Draw info
+            drawInfo();
+        }
+        
+        function drawAcousticField() {
+            let cellW = width / FIELD_RESOLUTION;
+            let cellH = height / FIELD_RESOLUTION;
+            
+            for (let y = 0; y < FIELD_RESOLUTION; y++) {
+                for (let x = 0; x < FIELD_RESOLUTION; x++) {
+                    let value = acousticField[y * FIELD_RESOLUTION + x];
+                    
+                    if (value > 0.5) {
+                        let alpha = map(value, 0.5, 1, 0, 30);
+                        pg.noStroke();
+                        pg.fill(0, 255, 65, alpha);
+                        pg.rect(x * cellW, y * cellH, cellW, cellH);
+                    }
+                }
+            }
+        }
+        
+        function drawWaveformBox() {
+            let boxX = 20;
+            let boxY = height - 120;
+            let boxW = width - 40;
+            let boxH = 60;
+            
+            push();
+            
+            // Box border
+            noFill();
+            stroke(0, 255, 65, 150);
+            strokeWeight(1);
+            rect(boxX, boxY, boxW, boxH);
+            
+            // Corner accents
+            stroke(0, 255, 65, 200);
+            strokeWeight(2);
+            let cornerSize = 8;
+            // Top-left
+            line(boxX, boxY, boxX + cornerSize, boxY);
+            line(boxX, boxY, boxX, boxY + cornerSize);
+            // Top-right
+            line(boxX + boxW, boxY, boxX + boxW - cornerSize, boxY);
+            line(boxX + boxW, boxY, boxX + boxW, boxY + cornerSize);
+            // Bottom-left
+            line(boxX, boxY + boxH, boxX + cornerSize, boxY + boxH);
+            line(boxX, boxY + boxH, boxX, boxY + boxH - cornerSize);
+            // Bottom-right
+            line(boxX + boxW, boxY + boxH, boxX + boxW - cornerSize, boxY + boxH);
+            line(boxX + boxW, boxY + boxH, boxX + boxW, boxY + boxH - cornerSize);
+            
+            // Center line
+            stroke(0, 255, 65, 50);
+            strokeWeight(1);
+            line(boxX, boxY + boxH / 2, boxX + boxW, boxY + boxH / 2);
+            
+            // Grid lines
+            for (let i = 1; i <= 3; i++) {
+                let gridY = boxY + (boxH / 4) * i;
+                stroke(0, 255, 65, 20);
+                line(boxX, gridY, boxX + boxW, gridY);
+            }
+            
+            // Draw waveform
+            noFill();
+            stroke(0, 255, 65, 200);
+            strokeWeight(2);
+            beginShape();
+            
+            for (let x = 0; x < boxW; x += 2) {
+                let t = x / boxW;
+                let waveX = boxX + x;
+                
+                // Complex waveform
+                let wave = 0;
+                wave += sin(t * TWO_PI * 3 + time * 0.05) * (boxH * 0.15);
+                wave += sin(t * TWO_PI * 7 + time * 0.08) * (boxH * 0.08);
+                wave += noise(x * 0.02, time * 0.02) * (boxH * 0.12);
+                
+                // Audio influence
+                if (audioEnabled && audioLevel > 0.05) {
+                    wave += sin(t * TWO_PI * 12 + time * 0.1) * audioLevel * (boxH * 0.2);
+                }
+                
+                vertex(waveX, boxY + boxH / 2 + wave);
+            }
+            endShape();
+            
+            // Add random spikes
+            stroke(0, 255, 65, 150);
+            strokeWeight(1);
+            for (let i = 0; i < 8; i++) {
+                if (noise(i * 10, time * 0.05) > 0.7) {
+                    let spikeX = boxX + noise(i * 100, time * 0.02) * boxW;
+                    let spikeHeight = noise(i * 50, time * 0.03) * boxH * 0.25;
+                    line(spikeX, boxY + boxH / 2, spikeX, boxY + boxH / 2 + spikeHeight);
+                    line(spikeX, boxY + boxH / 2, spikeX, boxY + boxH / 2 - spikeHeight);
+                }
+            }
+            
+            // Label
+            fill(0, 255, 65, 150);
+            noStroke();
+            textSize(8);
+            textAlign(LEFT, TOP);
+            text('SIGNAL WAVEFORM', boxX + 5, boxY + 5);
+            
+            // Frequency markers - just numbers
+            textAlign(RIGHT, CENTER);
+            textSize(7);
+            fill(0, 255, 65, 100);
+            text('847', boxX - 5, boxY + boxH * 0.25);
+            text('000', boxX - 5, boxY + boxH * 0.5);
+            text('281', boxX - 5, boxY + boxH * 0.75);
+            
+            pop();
+        }
+        
+        function drawInfo() {
+            push();
+            fill(0, 255, 65, 200);
+            noStroke();
+            textSize(11);
+            textAlign(LEFT, BOTTOM);
+            
+            let x = 20;
+            let y = height - 130;
+            
+            text(`ACOUSTIC FIELD DETECTION`, x, y);
+            
+            if (audioEnabled) {
+                fill(0, 255, 65, 200);
+                text(`AUDIO INPUT: ${floor(audioLevel * 100)}%`, x + 250, y);
+            } else {
+                fill(0, 255, 65, 100);
+                text(`[A] ENABLE AUDIO INPUT`, x + 250, y);
+            }
+            
+            text(`RIPPLES: ${detectionRipples.length}`, x + 500, y);
+            text(`PARAMETERS: ${parameterBoxes.length}`, x + 650, y);
+            
+            // Instructions
+            textAlign(RIGHT, BOTTOM);
+            fill(0, 255, 65, 150);
+            textSize(10);
+            text(`CLICK: Spawn Ripple | A: Toggle Audio | DRAG: Multiple Ripples`, width - 20, y);
+            
+            pop();
+        }
+        
+        function mousePressed() {
+            if (detectionRipples.length < MAX_RIPPLES) {
+                detectionRipples.push(new AcousticRipple(mouseX, mouseY, random(0.5, 1)));
+            }
+            
+            // Spawn parameter box near click
+            if (parameterBoxes.length < MAX_PARAM_BOXES && random() > 0.3) {
+                let box = new ParameterBox();
+                box.x = mouseX + random(-80, 80);
+                box.y = mouseY + random(-80, 80);
+                box.x = constrain(box.x, 20, width - box.w - 20);
+                box.y = constrain(box.y, 20, height - 200);
+                parameterBoxes.push(box);
+            }
+        }
+        
+        function mouseDragged() {
+            if (frameCount % 5 === 0 && detectionRipples.length < MAX_RIPPLES) {
+                detectionRipples.push(new AcousticRipple(mouseX, mouseY, random(0.3, 0.7)));
+            }
+        }
+        
+        function keyPressed() {
+            if (key === 'a' || key === 'A') {
+                audioEnabled = !audioEnabled;
+                if (audioEnabled && !mic) {
+                    mic = new p5.AudioIn();
+                    mic.start();
+                } else if (!audioEnabled && mic) {
+                    mic.stop();
+                }
+            }
+        }
+        
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            pg = createGraphics(width, height);
+        }
+    </script>
+</body>
+</html>

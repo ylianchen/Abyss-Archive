@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abyssal Memory Laboratory - Deep Ocean Research Station</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <div class="status-indicator"></div>
+                <span>SYSTEM ONLINE</span>
+            </div>
+            <div class="status-item">
+                <span>DEPTH: -3847m</span>
+            </div>
+            <div class="status-item">
+                <span>TEMP: 2.4°C</span>
+            </div>
+        </div>
+        <div class="status-right">
+            <span id="current-time">2157.03.24 14:27:33 UTC</span>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <div class="header">
+        <div class="header-inner">
+            <h1>ABYSSAL MEMORY LABORATORY</h1>
+            <div class="subtitle">Deep Ocean Research Station - Specimen Database & Visualization System v2.4.7</div>
+        </div>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3>Active Specimens</h3>
+                <div class="specimen-item active" onclick="loadSpecimen('AML-2847')">
+                    <div class="specimen-id">AML-2847</div>
+                    <div class="specimen-name">Acidosis Adaptor</div>
+                </div>
+                <div class="specimen-item" onclick="loadSpecimen('AML-3491')">
+                    <div class="specimen-id">AML-3491</div>
+                    <div class="specimen-name">Microplastic Filter</div>
+                </div>
+                <div class="specimen-item" onclick="loadSpecimen('AML-4102')">
+                    <div class="specimen-id">AML-4102</div>
+                    <div class="specimen-name">Thermal Indicator</div>
+                </div>
+                <div class="specimen-item" onclick="loadSpecimen('AML-5573')">
+                    <div class="specimen-id">AML-5573</div>
+                    <div class="specimen-name">Sonic Refuge Crab</div>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3>Environmental Data</h3>
+                <div class="param-item">
+                    <span class="param-label">pH Level:</span>
+                    <span class="param-value">5.2</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">Pressure:</span>
+                    <span class="param-value">387 atm</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">Salinity:</span>
+                    <span class="param-value">35.1 ppt</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">O₂ Saturation:</span>
+                    <span class="param-value">12.4%</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h2>Real-Time Visualization Stream</h2>
+                <span class="timestamp">Last Update: <span id="update-time">14:27:33</span></span>
+            </div>
+            
+            <!-- TouchDesigner Stream Area -->
+            <div class="td-stream">
+                <div class="stream-overlay">
+                    <div>TD PORT: 9099 | FPS: 30</div>
+                    <div>RESOLUTION: 1280x400</div>
+                </div>
+                <canvas id="interaction-canvas"></canvas>
+                <!-- Embedded stream element (MJPEG/img fallback). If TouchDesigner serves MJPEG at /, this will render it. -->
+                <img id="td-stream-img" alt="TouchDesigner Stream" style="display:none; width:100%; height:100%; object-fit:cover;" crossorigin="anonymous">
+                <!-- Fallback placeholder and status --><div class="td-placeholder">
+                    <div id="td-status-title">▲ TOUCHDESIGNER STREAM ▲</div>
+                    <div class="status" id="td-status">Awaiting connection on localhost:9099</div>
+                    <div class="status">Move mouse to interact with particle system</div>
+                </div>
+                <div class="coordinates">
+                    <span>X: <span id="mouse-x">0</span> | Y: <span id="mouse-y">0</span> | Speed: <span id="mouse-speed">0</span></span>
+                </div>
+            </div>
+            
+            <!-- Interactive Controls -->
+            <div class="controls">
+                <div class="control-row">
+                    <label class="control-label">Depth Simulation:</label>
+                    <input type="range" id="depth-slider" min="0" max="5000" value="3847" oninput="updateDepth(this.value)">
+                    <span class="slider-value"><span id="depth-value">3847</span>m</span>
+                </div>
+                <div class="control-row">
+                    <label class="control-label">pH Gradient:</label>
+                    <input type="range" id="ph-slider" min="3" max="9" step="0.1" value="5.2" oninput="updatePH(this.value)">
+                    <span class="slider-value"><span id="ph-value">5.2</span></span>
+                </div>
+                <div class="control-row">
+                    <label class="control-label">Temporal Flow:</label>
+                    <input type="range" id="time-slider" min="0" max="100" value="50" oninput="updateTime(this.value)">
+                    <span class="slider-value"><span id="time-value">50</span>%</span>
+                </div>
+            </div>
+            
+            <!-- Data Display -->
+            <div class="data-section">
+                <div class="data-grid">
+                    <div class="data-box">
+                        <div class="data-box-label">Genetic Drift</div>
+                        <div class="data-box-value">47.3%</div>
+                        <div class="data-box-bar">
+                            <div class="data-box-bar-fill" style="width: 47.3%;"></div>
+                        </div>
+                    </div>
+                    <div class="data-box">
+                        <div class="data-box-label">Survival Rate</div>
+                        <div class="data-box-value">0.012%</div>
+                        <div class="data-box-bar">
+                            <div class="data-box-bar-fill" style="width: 1.2%;"></div>
+                        </div>
+                    </div>
+                    <div class="data-box">
+                        <div class="data-box-label">Adaptation Index</div>
+                        <div class="data-box-value">8.7/10</div>
+                        <div class="data-box-bar">
+                            <div class="data-box-bar-fill" style="width: 87%;"></div>
+                        </div>
+                    </div>
+                    <div class="data-box">
+                        <div class="data-box-label">Biodiversity</div>
+                        <div class="data-box-value">-34.2%</div>
+                        <div class="data-box-bar">
+                            <div class="data-box-bar-fill decline" style="width: 34.2%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Field Notes -->
+            <div class="notes-section">
+                <div class="notes-header">Field Notes - Dr. K. Yamamoto - 2157.02.18</div>
+                <div class="notes-content">
+                    Specimen AML-2847 exhibits unprecedented adaptation to extreme acidification zones. Transparent exoskeleton structure allows direct observation of internal pH regulation mechanisms. Notable crystalline formations detected within digestive tract suggest possible carbonate sequestration behavior. Ultrasonic response patterns detected beyond standard equipment range (>150kHz). Recommend Protocol Seven containment procedures for further investigation.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
