@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abyssal Memory Laboratory - Deep Ocean Research Station</title>
+    <title>Digital Abyss Archive - Field OS</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
 </head>
 <body>
-    <!-- Status Bar -->
     <div class="status-bar">
         <div class="status-left">
             <div class="status-item">
@@ -26,145 +27,190 @@
         </div>
     </div>
     
-    <!-- Header -->
     <div class="header">
         <div class="header-inner">
-            <h1>ABYSSAL MEMORY LABORATORY</h1>
-            <div class="subtitle">Deep Ocean Research Station - Specimen Database & Visualization System v2.4.7</div>
+            <h1>DIGITAL ABYSS ARCHIVE</h1>
+            <div class="subtitle">Algorithmic Epistemology Interface v3.1.2 - Antarctic Field Station</div>
         </div>
     </div>
     
-    <!-- Main Container -->
     <div class="container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-section">
-                <h3>Active Specimens</h3>
+                <h3>Algorithmic Specimens</h3>
                 <div class="specimen-item active" onclick="loadSpecimen('AML-2847')">
                     <div class="specimen-id">AML-2847</div>
-                    <div class="specimen-name">Acidosis Adaptor</div>
+                    <div class="specimen-name">Acidosis Adaptor (Control)</div>
                 </div>
-                <div class="specimen-item" onclick="loadSpecimen('AML-3491')">
-                    <div class="specimen-id">AML-3491</div>
-                    <div class="specimen-name">Microplastic Filter</div>
+                <div class="specimen-item" onclick="loadSpecimen('ALGO-NVDA')">
+                    <div class="specimen-id">ALGO-NVDA</div>
+                    <div class="specimen-name">Volatility Crab</div>
                 </div>
-                <div class="specimen-item" onclick="loadSpecimen('AML-4102')">
-                    <div class="specimen-id">AML-4102</div>
-                    <div class="specimen-name">Thermal Indicator</div>
+                <div class="specimen-item" onclick="loadSpecimen('ALGO-SENT')">
+                    <div class="specimen-id">ALGO-SENT</div>
+                    <div class="specimen-name">Sentiment Jellyfish</div>
                 </div>
-                <div class="specimen-item" onclick="loadSpecimen('AML-5573')">
-                    <div class="specimen-id">AML-5573</div>
-                    <div class="specimen-name">Sonic Refuge Crab</div>
+                <div class="specimen-item" onclick="loadSpecimen('ALGO-GOOG')">
+                    <div class="specimen-id">ALGO-GOOG</div>
+                    <div class="specimen-name">Query Worm</div>
                 </div>
             </div>
             
             <div class="sidebar-section">
-                <h3>Environmental Data</h3>
+                <h3>System Navigation</h3>
+                 <div class="specimen-item" onclick="loadSpecimen('SYS-LOG')">
+                    <div class="specimen-id">SYS-LOG</div>
+                    <div class="specimen-name">System Log & Status</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>External Data Feeds</h3>
                 <div class="param-item">
-                    <span class="param-label">pH Level:</span>
-                    <span class="param-value">5.2</span>
+                    <span class="param-label">NVDA Price:</span>
+                    <span class="param-value" id="feed-nvda">$287.44</span>
                 </div>
                 <div class="param-item">
-                    <span class="param-label">Pressure:</span>
-                    <span class="param-value">387 atm</span>
+                    <span class="param-label">AI Sentiment:</span>
+                    <span class="param-value" id="feed-sentiment">+0.82</span>
                 </div>
                 <div class="param-item">
-                    <span class="param-label">Salinity:</span>
-                    <span class="param-value">35.1 ppt</span>
+                    <span class="param-label">GOOGL Volume:</span>
+                    <span class="param-value" id="feed-googl">1.2M</span>
                 </div>
                 <div class="param-item">
-                    <span class="param-label">O₂ Saturation:</span>
-                    <span class="param-value">12.4%</span>
+                    <span class="param-label">API Latency:</span>
+                    <span class="param-value" id="feed-latency">48ms</span>
                 </div>
             </div>
         </div>
         
-        <!-- Main Content -->
         <div class="main-content">
-            <div class="content-header">
-                <h2>Real-Time Visualization Stream</h2>
-                <span class="timestamp">Last Update: <span id="update-time">14:27:33</span></span>
-            </div>
-            
-            <!-- TouchDesigner Stream Area -->
-            <div class="td-stream">
-                <div class="stream-overlay">
-                    <div>TD PORT: 9099 | FPS: 30</div>
-                    <div>RESOLUTION: 1280x400</div>
+            <div id="specimen-content">
+                <div class="content-header">
+                    <h2>Real-Time Visualization Stream</h2>
+                    <span class="timestamp">Last Update: <span id="update-time">14:27:33</span></span>
                 </div>
-                <canvas id="interaction-canvas"></canvas>
-                <!-- Embedded stream element (MJPEG/img fallback). If TouchDesigner serves MJPEG at /, this will render it. -->
-                <img id="td-stream-img" alt="TouchDesigner Stream" style="display:none; width:100%; height:100%; object-fit:cover;" crossorigin="anonymous">
-                <!-- Fallback placeholder and status --><div class="td-placeholder">
-                    <div id="td-status-title">▲ TOUCHDESIGNER STREAM ▲</div>
-                    <div class="status" id="td-status">Awaiting connection on localhost:9099</div>
-                    <div class="status">Move mouse to interact with particle system</div>
-                </div>
-                <div class="coordinates">
-                    <span>X: <span id="mouse-x">0</span> | Y: <span id="mouse-y">0</span> | Speed: <span id="mouse-speed">0</span></span>
-                </div>
-            </div>
-            
-            <!-- Interactive Controls -->
-            <div class="controls">
-                <div class="control-row">
-                    <label class="control-label">Depth Simulation:</label>
-                    <input type="range" id="depth-slider" min="0" max="5000" value="3847" oninput="updateDepth(this.value)">
-                    <span class="slider-value"><span id="depth-value">3847</span>m</span>
-                </div>
-                <div class="control-row">
-                    <label class="control-label">pH Gradient:</label>
-                    <input type="range" id="ph-slider" min="3" max="9" step="0.1" value="5.2" oninput="updatePH(this.value)">
-                    <span class="slider-value"><span id="ph-value">5.2</span></span>
-                </div>
-                <div class="control-row">
-                    <label class="control-label">Temporal Flow:</label>
-                    <input type="range" id="time-slider" min="0" max="100" value="50" oninput="updateTime(this.value)">
-                    <span class="slider-value"><span id="time-value">50</span>%</span>
-                </div>
-            </div>
-            
-            <!-- Data Display -->
-            <div class="data-section">
-                <div class="data-grid">
-                    <div class="data-box">
-                        <div class="data-box-label">Genetic Drift</div>
-                        <div class="data-box-value">47.3%</div>
-                        <div class="data-box-bar">
-                            <div class="data-box-bar-fill" style="width: 47.3%;"></div>
-                        </div>
+                
+                <div class="td-stream" id="p5-container">
+                    <div class="stream-overlay">
+                        <div>P5.JS ACTIVE | FPS: <span id="p5-fps">...</span></div>
+                        <div>AUDIO: <span id="p5-audio-status">DISABLED</span></div>
                     </div>
-                    <div class="data-box">
-                        <div class="data-box-label">Survival Rate</div>
-                        <div class="data-box-value">0.012%</div>
-                        <div class="data-box-bar">
-                            <div class="data-box-bar-fill" style="width: 1.2%;"></div>
-                        </div>
+                    
+                    <div class="coordinates">
+                        <span>X: <span id="mouse-x">0</span> | Y: <span id="mouse-y">0</span> | Input: <span id="p5-input-status">...</span></span>
                     </div>
-                    <div class="data-box">
-                        <div class="data-box-label">Adaptation Index</div>
-                        <div class="data-box-value">8.7/10</div>
-                        <div class="data-box-bar">
-                            <div class="data-box-bar-fill" style="width: 87%;"></div>
-                        </div>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-row">
+                        <label class="control-label">Algorithmic Bias:</label>
+                        <input type="range" id="depth-slider" min="0" max="100" value="50" oninput="updateDepth(this.value)">
+                        <span class="slider-value"><span id="depth-value">50</span>%</span>
                     </div>
-                    <div class="data-box">
-                        <div class="data-box-label">Biodiversity</div>
-                        <div class="data-box-value">-34.2%</div>
-                        <div class="data-box-bar">
-                            <div class="data-box-bar-fill decline" style="width: 34.2%;"></div>
+                    <div class="control-row">
+                        <label class="control-label">Data 'Truth' Threshold:</label>
+                        <input type="range" id="ph-slider" min="0" max="1" step="0.01" value="0.75" oninput="updatePH(this.value)">
+                        <span class="slider-value"><span id="ph-value">0.75</span></span>
+                    </div>
+                    <div class="control-row">
+                        <label class="control-label">Market Correlation:</label>
+                        <input type="range" id="time-slider" min="0" max="100" value="80" oninput="updateTime(this.value)">
+                        <span class="slider-value"><span id="time-value">80</span>%</span>
+                    </div>
+                </div>
+                
+                <div class="data-section">
+                    <div class="data-grid">
+                        <div class="data-box">
+                            <div class="data-box-label">Algorithmic Drift</div>
+                            <div class="data-box-value">47.3%</div>
+                            <div class="data-box-bar">
+                                <div class="data-box-bar-fill" style="width: 47.3%;"></div>
+                            </div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-label">Survival Rate (Sim)</div>
+                            <div class="data-box-value">0.012%</div>
+                            <div class="data-box-bar">
+                                <div class="data-box-bar-fill" style="width: 1.2%;"></div>
+                            </div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-label">Adaptation Index</div>
+                            <div class="data-box-value">8.7/10</div>
+                            <div class="data-box-bar">
+                                <div class="data-box-bar-fill" style="width: 87%;"></div>
+                            </div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-label">Epistemic Stability</div>
+                            <div class="data-box-value">-34.2%</div>
+                            <div class="data-box-bar">
+                                <div class="data-box-bar-fill decline" style="width: 34.2%;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Field Notes -->
-            <div class="notes-section">
-                <div class="notes-header">Field Notes - Dr. K. Yamamoto - 2157.02.18</div>
-                <div class="notes-content">
-                    Specimen AML-2847 exhibits unprecedented adaptation to extreme acidification zones. Transparent exoskeleton structure allows direct observation of internal pH regulation mechanisms. Notable crystalline formations detected within digestive tract suggest possible carbonate sequestration behavior. Ultrasonic response patterns detected beyond standard equipment range (>150kHz). Recommend Protocol Seven containment procedures for further investigation.
+                
+                <div class="notes-section">
+                    <div class="notes-header">Field Notes - Dr. K. Yamamoto - 2157.02.18</div>
+                    <div class="notes-content">
+                        Specimen AML-2847 exhibits unprecedented adaptation to extreme acidification zones. Transparent exoskeleton structure allows direct observation of internal pH regulation mechanisms. Notable crystalline formations detected within digestive tract suggest possible carbonate sequestration behavior. Ultrasonic response patterns detected beyond standard equipment range (>150kHz). Recommend Protocol Seven containment procedures for further investigation.
+                    </div>
                 </div>
             </div>
+
+            <div id="system-log-content" style="display: none;">
+                <div class="content-header">
+                    <h2>System Log & Epistemic Status</h2>
+                    <span class="timestamp">Last Entry: <span id="update-time-log">14:27:33</span></span>
+                </div>
+                
+                <div class="notes-section">
+                    <div class="notes-header">LIVE SYSTEM LOG - KERNEL v3.1.2</div>
+                    <div class="notes-content" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.6; max-height: 600px; overflow-y: auto;">
+                        [2157.03.24 14:27:33] INFO: System boot complete. All modules online.
+                        <br>[2157.03.24 14:27:33] INFO: Loading Digital Abyss Archive interface...
+                        <br>[2157.03.24 14:27:34] INFO: Connecting to external data feeds...
+                        <br>[2157.03.24 14:27:35] SUCCESS: API connection [AlphaVantage_NVDA] established. Latency: 48ms.
+                        <br>[2157.03.24 14:27:35] SUCCESS: API connection [Twitter_Sentiment_v2] established. Latency: 112ms.
+                        <br>[2157.03.24 14:27:36] SUCCESS: API connection [Google_Trends_GOOGL] established. Latency: 61ms.
+                        <br>[2157.03.24 14:27:36] INFO: Initializing p5.js visualization instance...
+                        <br>[2157.03.24 14:27:37] INFO: p5.js sound module waiting for user interaction.
+                        <br>[2157.03.24 14:27:40] INFO: User [R_BAEKER] authenticated. Loading specimen AML-2847.
+                        <br>[2157.03.24 14:28:01] WARN: Epistemic stability fluctuating. Market correlation coefficient at 0.82.
+                        <br>[2157.03.24 14:28:05] INFO: Ingesting new data block [NVDA: $287.44].
+                        <br>[2157.03.24 14:28:05] INFO: Algorithmic specimen ALGO-NVDA behavior parameters recalculating...
+                        <br>[2157.03.24 14:28:10] WARN: High volume [AI Sentiment: +0.82] detected. Generating new organism instances for ALGO-SENT.
+                        <br>[2157.03.24 14:28:15] INFO: User loaded specimen ALGO-NVDA.
+                        <br>[2157.03.24 14:28:33] INFO: User loaded specimen SYS-LOG.
+                        <br>[2157.03.24 14:28:50] WARN: Data 'truth' threshold set to 0.75. Low-confidence data points are being accepted as 'evidence'.
+                        <br>[2157.03.24 14:29:00] INFO: Pinging connection to physical lamp controller [Arduino/ESP32]...
+                        <br>[2157.03.24 14:29:01] SUCCESS: Lamp controller ACK. Ready to receive data.
+                    </div>
+                </div>
+
+                <div class="notes-section">
+                    <div class="notes-header">PROJECT MANIFESTO & STATUS</div>
+                    <div class="notes-content">
+                        <p><strong>Digital Abyss Archive</strong> is a speculative installation examining the construction of scientific authority. This interface mimics a deep-sea research station, but the "specimens" it "discovers" are generated and modulated in real-time by external data feeds from financial markets and social media.</p>
+                        
+                        <p><strong>Epistemic Warning:</strong> The "evidence" presented (morphology, behavior, survival rates) is not biological fact. It is a direct visualization of algorithmic activity. Market volatility is mapped to organism stress; social media sentiment is mapped to population density. This system deliberately blurs the line between observation and construction, questioning how digital "truth" is manufactured.</p>
+                        
+                        <br>
+                        <strong>System Status:</strong>
+                        <ul style="list-style-type: square; margin-left: 20px;">
+                            <li><strong>API Feeds:</strong> <span style="color: #2ecc40;">CONNECTED</span></li>
+                            <li><strong>p5.js Visualization:</strong> <span style="color: #2ecc40;">ACTIVE</span></li>
+                            <li><strong>Physical Lamp Controller:</strong> <span style="color: #2ecc40;">CONNECTED</span></li>
+                            <li><strong>Epistemic Integrity:</strong> <span style="color: #d44a4a;">COMPROMISED (by design)</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
     
