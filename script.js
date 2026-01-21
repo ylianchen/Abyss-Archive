@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- GLOBAL VARIABLES ---
     let myP5Sketch; // Reference to the p5.js sketch instance
+    
+    // --- HACKING VARIABLES ---
+    let hackUnlocked = false; // 是否已解锁
+    let breachTimer = null;   // 长按计时器
+    let resetTimer = null;    // 自动重置计时器 (新增)
+    
+    const HACK_TARGET_TIME = 92; // 目标：2092年
+    const HACK_TARGET_DEPTH = 10; // 目标：0-10%
+    const TOLERANCE = 5;          // 容错范围
+    const RESET_DELAY = 3 * 60 * 1000; // 3分钟后自动重置 (180,000ms)
 
     // --- DATA OBJECTS ---
     const specimenData = {
@@ -14,32 +24,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const specimenNotes = {
         'AML-2847': {
-            header: 'Field Notes - Dr. K. Yamamoto - 2157.02.18 (CONTROL)',
-            content: "Specimen AML-2847 (Control Group) serves as our baseline for 'natural' adaptation. All incoming algorithmic data is cross-referenced against this specimen's stable genome to measure deviation. Recommend Protocol Seven containment."
+            header: 'Field Notes - Dr. K. Yamamoto - 2157.02.18',
+            content: `<span class="official-text">Specimen AML-2847 exhibits unprecedented adaptation to extreme acidification zones. Transparent exoskeleton structure allows direct observation of internal pH regulation mechanisms.<br><br><strong>Observer Note:</strong> A true miracle of nature. Life always finds a way.</span>
+                      <span class="truth-text" style="display:none; color:#ff4136; font-family:'Courier New';">[DECRYPTING...]<br>ERROR: ORGANIC LIFE NOT DETECTED.<br>TARGET: AML-2847 IS A SYNTHETIC CONSTRUCT.<br>PURPOSE: PACIFICATION OF 21st CENTURY OBSERVERS.<br><br><strong>System Log:</strong> Real ocean pH level is 4.1. Sterility rate 100%. Generating "Hopeful" imagery to prevent temporal timeline collapse. DO NOT BELIEVE THE IMAGE.</span>`
         },
         'ALGO-NVDA': {
             header: 'Algorithmic Log - Specimen ALGO-NVDA (Volatility Crab)',
-            content: "Specimen's carapace density and agitation levels show a 0.94 correlation with NVDA market volatility. Rapid price fluctuations appear to trigger a defensive hardening of the exoskeleton, suggesting a direct link between market speculation and 'biologically' generated evidence."
+            content: "Specimen's carapace density and agitation levels show a 0.94 correlation with NVDA market volatility. Rapid price fluctuations appear to trigger a defensive hardening of the exoskeleton."
         },
         'ALGO-SENT': {
             header: 'Algorithmic Log - Specimen ALGO-SENT (Sentiment Jellyfish)',
-            content: "This organism's population density is directly tied to real-time Twitter/X sentiment analysis regarding 'AI'. Positive sentiment spikes (+0.8) correlate with massive, rapid blooms, while negative sentiment troughs cause mass 'die-offs'. A clear example of constructed reality."
+            content: "This organism's population density is directly tied to real-time Twitter/X sentiment analysis regarding 'AI'. Positive sentiment spikes (+0.8) correlate with massive, rapid blooms."
         },
         'ALGO-GOOG': {
             header: 'Algorithmic Log - Specimen ALGO-GOOG (Query Worm)',
-            content: "Bioluminescent patterns in this colony map directly to Google Search query volume for terms like 'AGI' and 'OpenAI'. The organism's 'communication' is a literal visualization of public curiosity and fear. We are not observing a creature; we are observing a data-driven echo."
+            content: "Bioluminescent patterns in this colony map directly to Google Search query volume for terms like 'AGI' and 'OpenAI'. The organism's 'communication' is a literal visualization of public curiosity and fear."
+        },
+        'SYS-LOG': {
+             header: 'AML-SYSTEM KERNEL // OPERATION ECHO',
+             content: '' 
         }
     };
 
     // --- CORE FUNCTIONS ---
 
-    // Load Specimen (Global function)
     window.loadSpecimen = function(id) {
+        if (id === 'SYS-LOG' && !hackUnlocked) return;
+
         document.querySelectorAll('.specimen-item').forEach(item => {
             item.classList.remove('active');
         });
         
-        const clickedItem = event.target.closest('.specimen-item');
+        let clickedItem;
+        if (id === 'SYS-LOG') {
+            clickedItem = document.getElementById('sys-kernel-tab');
+        } else {
+             clickedItem = document.querySelector(`.specimen-item[onclick="loadSpecimen('${id}')"]`);
+        }
+        
         if (clickedItem) {
             clickedItem.classList.add('active');
         }
@@ -50,11 +72,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (id === 'SYS-LOG') {
             if (specimenContent) specimenContent.style.display = 'none';
             if (systemLogContent) systemLogContent.style.display = 'block';
+            const logContent = document.querySelector('#system-log-content .notes-content');
+            if(logContent) setTimeout(() => logContent.scrollTop = logContent.scrollHeight, 100);
         } else {
             if (specimenContent) specimenContent.style.display = 'block';
             if (systemLogContent) systemLogContent.style.display = 'none';
 
-            if (specimenData[id] && specimenNotes[id]) {
+            if (specimenData[id]) {
                 updateDataDisplay(specimenData[id], id);
             }
             if (myP5Sketch) {
@@ -64,25 +88,20 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Loading section:', id);
     }
 
-    // Update Data Display
     function updateDataDisplay(data, id) {
         const dataBoxes = document.querySelectorAll('#specimen-content .data-box');
         const notes = specimenNotes[id];
 
         if (dataBoxes.length > 3) {
-            dataBoxes[0].querySelector('.data-box-label').textContent = 'Algorithmic Drift';
             dataBoxes[0].querySelector('.data-box-value').textContent = data.genetic + '%';
             dataBoxes[0].querySelector('.data-box-bar-fill').style.width = data.genetic + '%';
             
-            dataBoxes[1].querySelector('.data-box-label').textContent = 'Survival Rate (Sim)';
             dataBoxes[1].querySelector('.data-box-value').textContent = data.survival + '%';
             dataBoxes[1].querySelector('.data-box-bar-fill').style.width = (data.survival * 100) + '%';
             
-            dataBoxes[2].querySelector('.data-box-label').textContent = 'Adaptation Index';
             dataBoxes[2].querySelector('.data-box-value').textContent = (data.adaptation / 10).toFixed(1) + '/10';
             dataBoxes[2].querySelector('.data-box-bar-fill').style.width = data.adaptation + '%';
             
-            dataBoxes[3].querySelector('.data-box-label').textContent = 'Epistemic Stability';
             dataBoxes[3].querySelector('.data-box-value').textContent = data.stability + '%';
             const barFill = dataBoxes[3].querySelector('.data-box-bar-fill');
             barFill.style.width = Math.abs(data.stability) + '%';
@@ -92,29 +111,216 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const notesHeader = document.querySelector('#specimen-content .notes-header');
         const notesContent = document.querySelector('#specimen-content .notes-content');
+        
         if (notesHeader && notesContent && notes) {
-            notesHeader.textContent = notes.header;
-            notesContent.innerHTML = notes.content.replace(/\n/g, '<br>');
+            if (id === 'AML-2847' && hackUnlocked) {
+                 notesHeader.innerHTML = notes.header + ' <span style="color:red">[DECRYPTED]</span>';
+                 let tempDiv = document.createElement('div');
+                 tempDiv.innerHTML = notes.content;
+                 let official = tempDiv.querySelector('.official-text');
+                 let truth = tempDiv.querySelector('.truth-text');
+                 if(truth) truth.style.display = 'block'; 
+                 if(official) official.style.display = 'none';
+                 notesContent.innerHTML = tempDiv.innerHTML;
+            } else {
+                 notesHeader.textContent = notes.header;
+                 notesContent.innerHTML = notes.content; 
+                 if (!notes.content.includes('official-text')) {
+                     notesContent.innerHTML = notes.content.replace(/\n/g, '<br>');
+                 }
+            }
         }
     }
 
     // --- HELPER FUNCTIONS ---
 
-    // Slider Updates (Global functions)
     window.updateDepth = function(value) {
         document.getElementById('depth-value').textContent = value;
-        console.log('Algorithmic Bias:', value);
+        checkHackCondition(); 
     }
     window.updatePH = function(value) {
         document.getElementById('ph-value').textContent = value;
-        console.log('Truth Threshold:', value);
     }
     window.updateTime = function(value) {
         document.getElementById('time-value').textContent = value;
-        console.log('Market Correlation:', value);
+        checkHackCondition(); 
     }
 
-    // Clock Update
+    function checkHackCondition() {
+        if (hackUnlocked) return; 
+
+        const depthVal = parseInt(document.getElementById('depth-slider').value);
+        const timeVal = parseInt(document.getElementById('time-slider').value);
+
+        const isTimeCorrect = Math.abs(timeVal - HACK_TARGET_TIME) <= TOLERANCE;
+        const isDepthCorrect = depthVal <= HACK_TARGET_DEPTH;
+
+        const statusLight = document.getElementById('system-status-light');
+        const statusText = document.getElementById('system-status-text');
+        
+        if (!statusLight) return;
+
+        if (isTimeCorrect && isDepthCorrect) {
+            if (!statusLight.classList.contains('critical-error')) {
+                statusLight.classList.add('critical-error');
+                if(statusText) {
+                    statusText.textContent = "FATAL ERROR";
+                    statusText.style.color = "#ff4136";
+                }
+                console.log("[HACK] Condition Met. Waiting for manual override...");
+            }
+        } else {
+            if (statusLight.classList.contains('critical-error')) {
+                statusLight.classList.remove('critical-error');
+                if(statusText) {
+                    statusText.textContent = "SYSTEM ONLINE";
+                    statusText.style.color = "";
+                }
+            }
+        }
+    }
+
+    function setupStatusLightInteraction() {
+        const statusLight = document.getElementById('system-status-light');
+        const statusText = document.getElementById('system-status-text');
+        if (!statusLight) return;
+
+        const startBreach = (e) => {
+            if (e.type === 'touchstart') e.preventDefault(); 
+            if (hackUnlocked) return;
+            if (!statusLight.classList.contains('critical-error')) return;
+
+            console.log("[HACK] Initiating breach...");
+            playGlitchSound(true); 
+
+            if(statusText) statusText.textContent = "OVERRIDING...";
+            
+            breachTimer = setTimeout(() => {
+                triggerUnlockSequence();
+            }, 3000); 
+        };
+
+        const endBreach = () => {
+            if (hackUnlocked) return;
+            if (breachTimer) {
+                clearTimeout(breachTimer);
+                breachTimer = null;
+            }
+            playGlitchSound(false); 
+            
+            if (statusLight.classList.contains('critical-error') && statusText) {
+                statusText.textContent = "FATAL ERROR";
+            }
+        };
+
+        statusLight.addEventListener('mousedown', startBreach);
+        statusLight.addEventListener('touchstart', startBreach);
+        
+        document.addEventListener('mouseup', endBreach);
+        document.addEventListener('touchend', endBreach);
+    }
+
+    function triggerUnlockSequence() {
+        hackUnlocked = true;
+        clearTimeout(breachTimer);
+        playGlitchSound(false);
+
+        console.log("[HACK] SYSTEM BREACH SUCCESSFUL");
+
+        // 视觉特效
+        const overlay = document.getElementById('breach-overlay');
+        if(overlay) overlay.classList.add('breach-active');
+        
+        playSuccessSound();
+
+        // 更新状态灯（熄灭）
+        const statusLight = document.getElementById('system-status-light');
+        const statusText = document.getElementById('system-status-text');
+        
+        if(statusLight) {
+            statusLight.classList.remove('critical-error');
+            statusLight.style.backgroundColor = "black";
+        }
+        if(statusText) statusText.textContent = "SYSTEM OFFLINE";
+
+        // 解锁 Tab
+        const kernelTab = document.getElementById('sys-kernel-tab');
+        if(kernelTab) {
+            kernelTab.classList.remove('locked');
+            kernelTab.classList.add('active'); 
+            const nameEl = kernelTab.querySelector('.specimen-name');
+            if(nameEl) nameEl.textContent = ">>> MANIFESTO REVEALED <<<";
+        }
+
+        // 如果当前页面是 AML-2847，强制刷新以显示真相文本
+        const currentActive = document.querySelector('.specimen-item.active');
+        if(currentActive && currentActive.querySelector('.specimen-id').textContent === 'AML-2847') {
+             updateDataDisplay(specimenData['AML-2847'], 'AML-2847');
+        }
+
+        // 自动跳转到宣言页面
+        setTimeout(() => {
+            loadSpecimen('SYS-LOG');
+        }, 1500);
+
+        // --- NEW: 设置自动重置定时器 ---
+        console.log(`[SYS] Reset timer set for ${RESET_DELAY / 1000} seconds.`);
+        if (resetTimer) clearTimeout(resetTimer);
+        resetTimer = setTimeout(resetSystem, RESET_DELAY);
+    }
+
+    // --- NEW: 自动重置函数 ---
+    function resetSystem() {
+        console.log("[SYS] Performing System Reset...");
+        hackUnlocked = false;
+
+        // 1. 软件层面重置滑块值 (防止重置后立即又满足 HACK 条件)
+        // 这一步很关键，因为物理滑块可能还在原位，我们需要在代码里“无视”它直到下次移动
+        const depthSlider = document.getElementById('depth-slider');
+        const timeSlider = document.getElementById('time-slider');
+        
+        if (depthSlider) {
+            depthSlider.value = 50; 
+            document.getElementById('depth-value').textContent = 50;
+        }
+        if (timeSlider) {
+            timeSlider.value = 80;
+            document.getElementById('time-value').textContent = 80;
+        }
+
+        // 2. 重置状态灯
+        const statusLight = document.getElementById('system-status-light');
+        const statusText = document.getElementById('system-status-text');
+        
+        if(statusLight) {
+            statusLight.classList.remove('critical-error');
+            statusLight.style.backgroundColor = ""; // 恢复默认绿色
+        }
+        if(statusText) {
+            statusText.textContent = "SYSTEM ONLINE";
+            statusText.style.color = "";
+        }
+
+        // 3. 重新锁定 Kernel Tab
+        const kernelTab = document.getElementById('sys-kernel-tab');
+        if(kernelTab) {
+            kernelTab.classList.add('locked');
+            kernelTab.classList.remove('active');
+            const nameEl = kernelTab.querySelector('.specimen-name');
+            if(nameEl) nameEl.textContent = "Generation Logs & Errors"; // 恢复原名
+        }
+
+        // 4. 清除屏幕故障层
+        const overlay = document.getElementById('breach-overlay');
+        if(overlay) overlay.classList.remove('breach-active');
+
+        // 5. 跳转回默认生物页面 (显示官方文本)
+        loadSpecimen('AML-2847');
+        
+        // 可选：播放一个简单的重启音效或日志
+        console.log("[SYS] Reset Complete. Simulation restarted.");
+    }
+
     function updateClock() {
         const now = new Date();
         const year = 2157, month = '03', day = '24';
@@ -142,31 +348,79 @@ document.addEventListener('DOMContentLoaded', function() {
             const sections = ['AML-2847', 'ALGO-NVDA', 'ALGO-SENT', 'ALGO-GOOG', 'SYS-LOG'];
             const index = parseInt(e.key) - 1;
             if (sections[index]) {
-                const item = document.querySelector(`[onclick="loadSpecimen('${sections[index]}')"]`);
-                if (item) item.click();
+                loadSpecimen(sections[index]);
             }
         }
-        
         if (e.key === 'r' || e.key === 'R') {
-            const depthSlider = document.getElementById('depth-slider');
-            const phSlider = document.getElementById('ph-slider');
-            const timeSlider = document.getElementById('time-slider');
-            
-            if (depthSlider) { depthSlider.value = 50; updateDepth(50); }
-            if (phSlider) { phSlider.value = 0.75; updatePH(0.75); }
-            if (timeSlider) { timeSlider.value = 80; updateTime(80); }
+            resetSystem(); // 允许按 R 键手动重置
         }
-
         if (e.key === 'a' || e.key === 'A') {
             if (myP5Sketch) myP5Sketch.toggleAudio();
         }
     });
 
+    // --- AUDIO UTILS (Generative) ---
+    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let osc = null;
+    let gainNode = null;
+
+    function playGlitchSound(active) {
+        if (active) {
+            if (osc) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            osc = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
+            
+            let lfo = audioCtx.createOscillator();
+            lfo.type = 'square';
+            lfo.frequency.value = 30; 
+            let lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 500;
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            lfo.start();
+
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+        } else {
+            if (osc) {
+                osc.stop();
+                osc.disconnect();
+                osc = null;
+            }
+        }
+    }
+
+    function playSuccessSound() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        let sOsc = audioCtx.createOscillator();
+        let sGain = audioCtx.createGain();
+        sOsc.type = 'sine';
+        sOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        sOsc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+        sGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        sGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+        sOsc.connect(sGain);
+        sGain.connect(audioCtx.destination);
+        sOsc.start();
+        sOsc.stop(audioCtx.currentTime + 1.5);
+    }
+
     console.log('Digital Abyss Archive System Initialized');
     console.log('Keyboard shortcuts: 1-5 to switch sections, R to reset sliders, A to toggle audio');
 
     // =========================================================================
-    // --- P5.JS SKETCH (PORTED FROM SPECTROGRAM.HTML) ---
+    // --- P5.JS SKETCH ---
     // =========================================================================
 
     const p5_sketch = ( p ) => {
@@ -174,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let audioEnabled = false;
         let audioLevel = 0;
         let acousticField = [];
-        let pg; // Graphics buffer
+        let pg; 
         let detectionRipples = [];
         let parameterBoxes = [];
         let time = 0;
@@ -185,23 +439,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         p.setup = () => {
             container = document.getElementById('p5-container');
-            canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
-            canvas.parent('p5-container'); // **FIX**: Explicitly parent the canvas
-            
-            pg = p.createGraphics(p.width, p.height);
-            p.pixelDensity(1);
-            
-            for (let i = 0; i < FIELD_RESOLUTION * FIELD_RESOLUTION; i++) acousticField[i] = 0;
-            for (let i = 0; i < 12; i++) parameterBoxes.push(new ParameterBox(p));
+            if(container) {
+                canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
+                canvas.parent('p5-container');
+                
+                pg = p.createGraphics(p.width, p.height);
+                p.pixelDensity(1);
+                
+                for (let i = 0; i < FIELD_RESOLUTION * FIELD_RESOLUTION; i++) acousticField[i] = 0;
+                for (let i = 0; i < 12; i++) parameterBoxes.push(new ParameterBox(p));
 
-            mouseX_el = document.getElementById('mouse-x');
-            mouseY_el = document.getElementById('mouse-y');
-            inputStatus_el = document.getElementById('p5-input-status');
-            fps_el = document.getElementById('p5-fps');
-            audioStatus_el = document.getElementById('p5-audio-status');
+                mouseX_el = document.getElementById('mouse-x');
+                mouseY_el = document.getElementById('mouse-y');
+                inputStatus_el = document.getElementById('p5-input-status');
+                fps_el = document.getElementById('p5-fps');
+                audioStatus_el = document.getElementById('p5-audio-status');
 
-            if (inputStatus_el) inputStatus_el.textContent = "MOUSE";
-            p.textFont('Trebuchet MS, Lucida Grande, sans-serif');
+                if (inputStatus_el) inputStatus_el.textContent = "MOUSE";
+                p.textFont('Trebuchet MS, Lucida Grande, sans-serif');
+            }
         };
 
         p.draw = () => {
@@ -225,7 +481,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (container && container.offsetWidth > 0) {
                 p.resizeCanvas(container.offsetWidth, container.offsetHeight);
                 pg = p.createGraphics(p.width, p.height);
-                console.log("p5 canvas resized.");
             }
         };
 
@@ -516,13 +771,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- INITIALIZATION ---
-    // All functions and classes are defined. Now, create the sketch.
-    // **FIX**: The 'p5-container' ID is passed as the second argument.
     myP5Sketch = new p5(p5_sketch, 'p5-container');
     
-    // Load the default specimen and start the clock
+    setupStatusLightInteraction();
+    
     loadSpecimen('AML-2847');
     updateClock();
     setInterval(updateClock, 1000);
 
-}); // End of DOMContentLoaded listener
+});

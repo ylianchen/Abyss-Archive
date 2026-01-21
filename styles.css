@@ -254,6 +254,34 @@ body::after {
     text-shadow: 0 1px 0 rgba(255,255,255,0.9);
 }
 
+/* 在 styles.css 末尾添加或修改 */
+
+/* 针对锁定状态的特殊文字颜色 */
+.specimen-item.locked .specimen-id {
+    color: #999 !important; /* 让 ID 变成浅灰色 */
+}
+
+.specimen-item.locked .specimen-name {
+    color: #ffffff !important; /* 让名字变成纯白色 */
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3); /* 加一点发光效果，更像被锁住的系统文件 */
+}
+
+/* 如果觉得背景太黑，也可以稍微调亮一点背景 */
+.specimen-item.locked {
+    background: #444; /* 稍微亮一点的深灰 */
+    border-color: #666;
+}
+
+/* 增强侧边栏小标题的对比度 */
+.sidebar-section h3 {
+    color: #ffffff; /* 纯黑，对比度最高 */
+    /* 或者使用深蓝色以匹配整体风格： color: #0f2d4a; */
+    
+    font-weight: 900; /* 加粗 */
+    text-shadow: 0 1px 0 rgba(0,0,0,0.8); /* 保持白色投影以增加立体感 */
+    opacity: 1; /* 确保不透明 */
+}
+
 /* Specimen Items - Retro Button Style */
 .specimen-item {
     background: linear-gradient(180deg, #f5f5f5 0%, #d8d8d8 100%);
@@ -682,4 +710,69 @@ body::after,
 .notes-section {
     -webkit-filter: saturate(var(--site-saturation));
     filter: saturate(var(--site-saturation));
+}
+
+/* --- HACKING INTERFACE STYLES (Added for Scheme A) --- */
+
+/* 1. 锁定的系统 Tab */
+.specimen-item.locked {
+    opacity: 0.5;
+    pointer-events: none; /* 禁止点击 */
+    background: #333;
+    border-color: #555;
+    position: relative;
+}
+
+.specimen-item.locked .specimen-name::after {
+    content: " [ENCRYPTED]";
+    color: #ff4136;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+/* 2. 状态灯的危机模式 */
+.status-indicator.critical-error {
+    background: radial-gradient(circle at 30% 30%, #ff4136, #85144b);
+    box-shadow: 
+        0 0 5px #ff4136,
+        0 0 15px #ff4136,
+        inset 0 1px 1px rgba(255,255,255,0.8);
+    animation: criticalBlink 0.2s infinite alternate; /* 极速闪烁 */
+    cursor: pointer; /* 暗示可点击 */
+    transform: scale(1.2); /* 稍微变大 */
+}
+
+@keyframes criticalBlink {
+    0% { opacity: 0.3; box-shadow: 0 0 2px #ff4136; }
+    100% { opacity: 1; box-shadow: 0 0 20px #ff4136; }
+}
+
+/* 3. 按住时的充能反馈 */
+.status-indicator.critical-error:active {
+    transform: scale(0.9);
+    background: #fff; /* 按下变白 */
+}
+
+/* 4. 全屏解锁故障特效 */
+.system-breach-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: red;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 99999;
+    mix-blend-mode: overlay;
+}
+
+.breach-active {
+    animation: breachFlash 2s forwards;
+}
+
+@keyframes breachFlash {
+    0% { opacity: 0; }
+    10% { opacity: 0.8; background: #fff; }
+    20% { opacity: 0; }
+    30% { opacity: 0.5; background: red; }
+    40% { opacity: 0; }
+    100% { opacity: 0; }
 }
