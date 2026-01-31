@@ -1,5 +1,10 @@
 /* Y2K Skeuomorphic Style - Early 2000s Aesthetic with CRT Effects */
 
+html {
+    background-color: #000000; /* 抖动时边缘显示黑色 */
+    overflow-x: hidden;        /* 防止抖动导致出现水平滚动条 */
+}
+
 * {
     margin: 0;
     padding: 0;

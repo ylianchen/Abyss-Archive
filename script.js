@@ -7,12 +7,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- HACKING VARIABLES ---
     let hackUnlocked = false; // 是否已解锁
     let breachTimer = null;   // 长按计时器
-    let resetTimer = null;    // 自动重置计时器 (新增)
+    let resetTimer = null;    // 自动重置计时器
     
     const HACK_TARGET_TIME = 92; // 目标：2092年
-    const HACK_TARGET_DEPTH = 10; // 目标：0-10%
+    const HACK_TARGET_DEPTH = 0; // 目标：0% (界面显示为表面，实际是数据源头)
+    // 注意：原本逻辑是 <= 10，现在为了配合解谜音效引导，我们在 checkHackCondition 里微调判定
     const TOLERANCE = 5;          // 容错范围
-    const RESET_DELAY = 3 * 60 * 1000; // 3分钟后自动重置 (180,000ms)
+    const RESET_DELAY = 3 * 60 * 1000; // 3分钟后自动重置
 
     // --- DATA OBJECTS ---
     const specimenData = {
@@ -46,7 +47,245 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // --- CORE FUNCTIONS ---
+    // =========================================================================
+    // --- AUDIO ENGINES (Added Features) ---
+    // =========================================================================
+
+    // 1. Abyss Audio Engine (Phantom Hydrophone)
+    class AbyssAudioEngine {
+        constructor() {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.connect(this.ctx.destination);
+            this.masterGain.gain.value = 0.3; 
+
+            this.currentMode = 'SAFE'; 
+            this.isInitialized = false;
+            
+            this.safeGain = this.ctx.createGain();
+            this.rawGain = this.ctx.createGain();
+            
+            this.safeGain.connect(this.masterGain);
+            this.rawGain.connect(this.masterGain);
+
+            this.safeGain.gain.value = 0;
+            this.rawGain.gain.value = 0;
+        }
+
+        async init() {
+            if (this.isInitialized) return;
+            if (this.ctx.state === 'suspended') await this.ctx.resume();
+
+            this.createSafeLayer();
+            this.createRawLayer();
+
+            this.isInitialized = true;
+            console.log("[AUDIO] Abyss Hydrophone Initialized.");
+            this.transitionTo('SAFE');
+        }
+
+        createSafeLayer() {
+            const freqs = [220, 277.18, 329.63]; // A Major
+            freqs.forEach(f => {
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = f;
+                
+                let lfo = this.ctx.createOscillator();
+                let lfoGain = this.ctx.createGain();
+                lfo.frequency.value = 0.1 + Math.random() * 0.1;
+                lfoGain.gain.value = 2;
+                lfo.connect(lfoGain);
+                lfoGain.connect(osc.frequency);
+                
+                osc.connect(gain);
+                gain.connect(this.safeGain);
+                osc.start();
+                lfo.start();
+                gain.gain.value = 0.3;
+            });
+        }
+
+        createRawLayer() {
+            // Brown Noise
+            let bufferSize = 2 * this.ctx.sampleRate;
+            let noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            let output = noiseBuffer.getChannelData(0);
+            let lastOut = 0;
+            for (let i = 0; i < bufferSize; i++) {
+                let white = Math.random() * 2 - 1;
+                output[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = output[i];
+                output[i] *= 3.5;
+            }
+            let noiseSrc = this.ctx.createBufferSource();
+            noiseSrc.buffer = noiseBuffer;
+            noiseSrc.loop = true;
+            let noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 150; 
+            noiseSrc.connect(noiseFilter);
+            noiseFilter.connect(this.rawGain);
+            noiseSrc.start();
+
+            // Screamer
+            let screamer = this.ctx.createOscillator();
+            let screamerGain = this.ctx.createGain();
+            screamer.type = 'sawtooth';
+            screamer.frequency.value = 50;
+            let mod = this.ctx.createOscillator();
+            let modGain = this.ctx.createGain();
+            mod.type = 'square';
+            mod.frequency.value = 8; 
+            modGain.gain.value = 200; 
+            mod.connect(modGain);
+            modGain.connect(screamer.frequency);
+            screamer.connect(screamerGain);
+            screamerGain.connect(this.rawGain);
+            screamer.start();
+            mod.start();
+            screamerGain.gain.value = 0.05; 
+        }
+
+        transitionTo(mode) {
+            if (this.currentMode === mode && this.isInitialized) return;
+            this.currentMode = mode;
+            const now = this.ctx.currentTime;
+            const fadeTime = 2.0;
+
+            if (mode === 'RAW') {
+                this.safeGain.gain.linearRampToValueAtTime(0, now + fadeTime);
+                this.rawGain.gain.linearRampToValueAtTime(0.8, now + fadeTime);
+            } else {
+                this.safeGain.gain.linearRampToValueAtTime(0.5, now + fadeTime);
+                this.rawGain.gain.linearRampToValueAtTime(0, now + fadeTime);
+            }
+        }
+    }
+
+    // 2. Puzzle Audio Guidance (Hot/Cold Game)
+    class PuzzleAudioGuidance {
+        constructor() {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.osc = null;
+            this.gain = null;
+            this.lfo = null;
+            this.lfoGain = null;
+            this.isExposed = false;
+            this.locked = false;
+        }
+
+        ensureContext() {
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+        }
+
+        start() {
+            if (this.isExposed || this.locked) return;
+            this.ensureContext();
+
+            this.osc = this.ctx.createOscillator();
+            this.gain = this.ctx.createGain();
+            this.osc.type = 'triangle'; 
+            
+            this.lfo = this.ctx.createOscillator();
+            this.lfoGain = this.ctx.createGain();
+            this.lfo.type = 'square';
+
+            this.lfo.connect(this.lfoGain);
+            this.lfoGain.connect(this.gain.gain);
+            this.osc.connect(this.gain);
+            this.gain.connect(this.ctx.destination);
+
+            this.osc.frequency.value = 100;
+            this.lfo.frequency.value = 2;
+            this.gain.gain.value = 0;
+
+            this.osc.start();
+            this.lfo.start();
+            this.isExposed = true;
+        }
+
+        update(depthVal, timeVal) {
+            if (!this.isExposed || this.locked) return;
+
+            // Target values
+            const targetDepth = 0; 
+            const targetTime = 92;
+            
+            // Calculate distance
+            let distDepth = Math.abs(depthVal - targetDepth);
+            let distTime = Math.abs(timeVal - targetTime);
+
+            // Activate only when somewhat close
+            if (distDepth < 30 && distTime < 30) {
+                let proximity = 1 - ((distDepth + distTime) / 60); 
+                proximity = Math.max(0, proximity);
+
+                // Sound mapping
+                this.gain.gain.setTargetAtTime(proximity * 0.15, this.ctx.currentTime, 0.1);
+                
+                let pitch = 100 + (proximity * 700);
+                this.osc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.1);
+
+                let speed = 2 + (proximity * 18);
+                this.lfo.frequency.setTargetAtTime(speed, this.ctx.currentTime, 0.1);
+            } else {
+                this.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.2);
+            }
+        }
+
+        stop() {
+            if (this.osc) { this.osc.stop(); this.osc.disconnect(); this.osc = null; }
+            if (this.lfo) { this.lfo.stop(); this.lfo.disconnect(); this.lfo = null; }
+            this.isExposed = false;
+        }
+
+        playLockSound() {
+            if (this.locked) return;
+            this.locked = true;
+            this.stop(); 
+
+            const now = this.ctx.currentTime;
+            
+            let osc = this.ctx.createOscillator();
+            let gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(now + 0.5);
+
+            let bass = this.ctx.createOscillator();
+            let bassGain = this.ctx.createGain();
+            bass.type = 'sawtooth';
+            bass.frequency.value = 110;
+            bassGain.gain.setValueAtTime(0.2, now);
+            bassGain.gain.linearRampToValueAtTime(0, now + 0.8);
+            bass.connect(bassGain);
+            bassGain.connect(this.ctx.destination);
+            bass.start();
+            bass.stop(now + 0.8);
+        }
+        
+        reset() {
+            this.locked = false;
+            this.stop();
+        }
+    }
+
+    // Initialize Global Audio Instances
+    const abyssAudio = new AbyssAudioEngine();
+    const puzzleAudio = new PuzzleAudioGuidance();
+
+
+    // =========================================================================
+    // --- CORE LOGIC & INTERACTION ---
+    // =========================================================================
 
     window.loadSpecimen = function(id) {
         if (id === 'SYS-LOG' && !hackUnlocked) return;
@@ -132,15 +371,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- HELPER FUNCTIONS ---
+    // --- SLIDER UPDATES & LOGIC ---
 
     window.updateDepth = function(value) {
         document.getElementById('depth-value').textContent = value;
+        
+        // 1. Hack Check & Puzzle Audio Update
         checkHackCondition(); 
+        
+        // 2. Phantom Hydrophone Logic
+        if (!abyssAudio.isInitialized) {
+            abyssAudio.init().catch(e => console.log("Audio waiting for gesture..."));
+        }
+        // If Depth > 95%, activate RAW mode
+        if (parseInt(value) > 95) {
+            abyssAudio.transitionTo('RAW');
+            const audioStatus = document.getElementById('p5-audio-status');
+            if(audioStatus) {
+                audioStatus.textContent = "⚠ HYDROPHONE: RAW FEED";
+                audioStatus.style.color = "#ff4136";
+                audioStatus.style.animation = "blink 0.5s infinite";
+            }
+        } else {
+            abyssAudio.transitionTo('SAFE');
+            const audioStatus = document.getElementById('p5-audio-status');
+            if(audioStatus) {
+                audioStatus.textContent = "HYDROPHONE: FILTERED";
+                audioStatus.style.color = ""; 
+                audioStatus.style.animation = "";
+            }
+        }
     }
+
     window.updatePH = function(value) {
         document.getElementById('ph-value').textContent = value;
     }
+
     window.updateTime = function(value) {
         document.getElementById('time-value').textContent = value;
         checkHackCondition(); 
@@ -152,8 +418,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const depthVal = parseInt(document.getElementById('depth-slider').value);
         const timeVal = parseInt(document.getElementById('time-slider').value);
 
+        // --- Puzzle Audio Update ---
+        puzzleAudio.start();
+        puzzleAudio.update(depthVal, timeVal);
+        // ---------------------------
+
+        // Target: Time near 92, Depth near 0 ( <= 10 for original logic, we keep it consistent)
+        // If you want strictly 0 for the puzzle sound, logic below handles <= 10
         const isTimeCorrect = Math.abs(timeVal - HACK_TARGET_TIME) <= TOLERANCE;
-        const isDepthCorrect = depthVal <= HACK_TARGET_DEPTH;
+        const isDepthCorrect = depthVal <= 10; 
 
         const statusLight = document.getElementById('system-status-light');
         const statusText = document.getElementById('system-status-text');
@@ -162,6 +435,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (isTimeCorrect && isDepthCorrect) {
             if (!statusLight.classList.contains('critical-error')) {
+                // Play Lock Sound
+                puzzleAudio.playLockSound();
+                
                 statusLight.classList.add('critical-error');
                 if(statusText) {
                     statusText.textContent = "FATAL ERROR";
@@ -171,6 +447,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } else {
             if (statusLight.classList.contains('critical-error')) {
+                // Unlock lost, reset guidance
+                puzzleAudio.reset();
+                puzzleAudio.start();
+
                 statusLight.classList.remove('critical-error');
                 if(statusText) {
                     statusText.textContent = "SYSTEM ONLINE";
@@ -227,13 +507,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         console.log("[HACK] SYSTEM BREACH SUCCESSFUL");
 
-        // 视觉特效
         const overlay = document.getElementById('breach-overlay');
         if(overlay) overlay.classList.add('breach-active');
         
         playSuccessSound();
 
-        // 更新状态灯（熄灭）
         const statusLight = document.getElementById('system-status-light');
         const statusText = document.getElementById('system-status-text');
         
@@ -243,7 +521,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if(statusText) statusText.textContent = "SYSTEM OFFLINE";
 
-        // 解锁 Tab
         const kernelTab = document.getElementById('sys-kernel-tab');
         if(kernelTab) {
             kernelTab.classList.remove('locked');
@@ -252,30 +529,27 @@ document.addEventListener('DOMContentLoaded', function() {
             if(nameEl) nameEl.textContent = ">>> MANIFESTO REVEALED <<<";
         }
 
-        // 如果当前页面是 AML-2847，强制刷新以显示真相文本
         const currentActive = document.querySelector('.specimen-item.active');
         if(currentActive && currentActive.querySelector('.specimen-id').textContent === 'AML-2847') {
              updateDataDisplay(specimenData['AML-2847'], 'AML-2847');
         }
 
-        // 自动跳转到宣言页面
         setTimeout(() => {
             loadSpecimen('SYS-LOG');
         }, 1500);
 
-        // --- NEW: 设置自动重置定时器 ---
         console.log(`[SYS] Reset timer set for ${RESET_DELAY / 1000} seconds.`);
         if (resetTimer) clearTimeout(resetTimer);
         resetTimer = setTimeout(resetSystem, RESET_DELAY);
     }
 
-    // --- NEW: 自动重置函数 ---
     function resetSystem() {
         console.log("[SYS] Performing System Reset...");
         hackUnlocked = false;
 
-        // 1. 软件层面重置滑块值 (防止重置后立即又满足 HACK 条件)
-        // 这一步很关键，因为物理滑块可能还在原位，我们需要在代码里“无视”它直到下次移动
+        // Reset Audio
+        puzzleAudio.reset();
+        
         const depthSlider = document.getElementById('depth-slider');
         const timeSlider = document.getElementById('time-slider');
         
@@ -288,36 +562,31 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('time-value').textContent = 80;
         }
 
-        // 2. 重置状态灯
         const statusLight = document.getElementById('system-status-light');
         const statusText = document.getElementById('system-status-text');
         
         if(statusLight) {
             statusLight.classList.remove('critical-error');
-            statusLight.style.backgroundColor = ""; // 恢复默认绿色
+            statusLight.style.backgroundColor = ""; 
         }
         if(statusText) {
             statusText.textContent = "SYSTEM ONLINE";
             statusText.style.color = "";
         }
 
-        // 3. 重新锁定 Kernel Tab
         const kernelTab = document.getElementById('sys-kernel-tab');
         if(kernelTab) {
             kernelTab.classList.add('locked');
             kernelTab.classList.remove('active');
             const nameEl = kernelTab.querySelector('.specimen-name');
-            if(nameEl) nameEl.textContent = "Generation Logs & Errors"; // 恢复原名
+            if(nameEl) nameEl.textContent = "Generation Logs & Errors"; 
         }
 
-        // 4. 清除屏幕故障层
         const overlay = document.getElementById('breach-overlay');
         if(overlay) overlay.classList.remove('breach-active');
 
-        // 5. 跳转回默认生物页面 (显示官方文本)
         loadSpecimen('AML-2847');
         
-        // 可选：播放一个简单的重启音效或日志
         console.log("[SYS] Reset Complete. Simulation restarted.");
     }
 
@@ -342,7 +611,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
         if (e.key >= '1' && e.key <= '5') {
             const sections = ['AML-2847', 'ALGO-NVDA', 'ALGO-SENT', 'ALGO-GOOG', 'SYS-LOG'];
@@ -352,14 +620,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         if (e.key === 'r' || e.key === 'R') {
-            resetSystem(); // 允许按 R 键手动重置
+            resetSystem();
         }
         if (e.key === 'a' || e.key === 'A') {
             if (myP5Sketch) myP5Sketch.toggleAudio();
         }
     });
 
-    // --- AUDIO UTILS (Generative) ---
+    // --- GENERIC AUDIO UTILS (Used for Breach Sound) ---
     let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     let osc = null;
     let gainNode = null;
@@ -416,11 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
         sOsc.stop(audioCtx.currentTime + 1.5);
     }
 
-    console.log('Digital Abyss Archive System Initialized');
-    console.log('Keyboard shortcuts: 1-5 to switch sections, R to reset sliders, A to toggle audio');
-
     // =========================================================================
-    // --- P5.JS SKETCH ---
+    // --- P5.JS SKETCH (with Data Rot) ---
     // =========================================================================
 
     const p5_sketch = ( p ) => {
@@ -436,6 +701,11 @@ document.addEventListener('DOMContentLoaded', function() {
         let container, canvas;
         const FIELD_RESOLUTION = 60, MAX_RIPPLES = 15, MAX_PARAM_BOXES = 30;
         let mouseX_el, mouseY_el, inputStatus_el, fps_el, audioStatus_el;
+        
+        // --- DATA ROT VARIABLES ---
+        let entropy = 0;
+        const ENTROPY_THRESHOLD = 120; // Approx 2 seconds of idleness
+        // --------------------------
 
         p.setup = () => {
             container = document.getElementById('p5-container');
@@ -467,6 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(mouseX_el) mouseX_el.textContent = p.mouseX.toFixed(0);
             if(mouseY_el) mouseY_el.textContent = p.mouseY.toFixed(0);
 
+            // Draw normal visualization
             switch(currentVisMode) {
                 case 'AML-2847': p.drawModeDefault(); break;
                 case 'ALGO-NVDA': p.drawModeNVDA(); break;
@@ -474,6 +745,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'ALGO-GOOG': p.drawModeGoogle(); break;
                 default: p.drawModeDefault();
             }
+
+            // === [DATA ROT LOGIC] ===
+            
+            // 1. Calculate Entropy
+            if (p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY) < 1) {
+                entropy++;
+            } else {
+                // Reset if mouse moves
+                if (entropy > 0) {
+                    entropy = 0;
+                    document.body.style.filter = '';
+                    document.body.style.transform = '';
+                    document.body.style.opacity = '';
+                }
+            }
+
+            // 2. Apply Effects
+            if (entropy > ENTROPY_THRESHOLD) {
+                let intensity = (entropy - ENTROPY_THRESHOLD) * 0.1;
+                intensity = p.constrain(intensity, 0, 30); // Mild Cap
+
+                // A. Canvas Glitch (Scanlines)
+                if (p.random(100) < intensity) {
+                    let y = p.floor(p.random(p.height));
+                    let h = p.floor(p.random(2, 30));
+                    let xOffset = p.random(-15, 15) * (intensity / 5);
+                    let slice = p.get(0, y, p.width, h);
+                    p.image(slice, xOffset, y);
+                }
+
+                // B. DOM Decay (Mild Shake & Filter)
+                let shakeX = p.random(-1, 1) * (intensity * 0.02);
+                let shakeY = p.random(-1, 1) * (intensity * 0.02);
+                
+                let sat = p.map(intensity, 0, 30, 0.9, 0.4); 
+                let cont = p.map(intensity, 0, 30, 1, 1.2);
+                let blur = p.map(intensity, 0, 30, 0, 1.5);
+                let hue = 0;
+                
+                if (intensity > 25) {
+                    hue = p.random(-5, 5); 
+                }
+
+                document.body.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
+                document.body.style.filter = `saturate(${sat}) contrast(${cont}) blur(${blur}px) hue-rotate(${hue}deg)`;
+
+                if (entropy % 300 === 0) {
+                     console.warn(`[SYS_CRITICAL] Reality Integrity dropping... ${(100 - intensity*2).toFixed(1)}%`);
+                }
+            }
+            // ========================
         };
 
         p.windowResized = () => {
@@ -504,11 +826,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!mic) { 
                     mic = new p5.AudioIn();
                     mic.start(() => {
-                        console.log("Mic started");
                         if(audioStatus_el) audioStatus_el.textContent = "ENABLED";
                         if(inputStatus_el) inputStatus_el.textContent = "AUDIO";
                     }, (e) => {
-                        console.error("Mic failed to start:", e);
                         if(audioStatus_el) audioStatus_el.textContent = "ERROR";
                         audioEnabled = false;
                     });
@@ -524,7 +844,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        // --- VISUALIZATION MODES ---
+        // --- VISUALIZATION MODES (Unchanged) ---
         p.drawModeDefault = () => {
             p.background(0); time++;
             if (audioEnabled && mic) audioLevel = mic.getLevel();
@@ -576,7 +896,7 @@ document.addEventListener('DOMContentLoaded', function() {
             p.drawWaveformBox(200, 255, 200, 0.08, 0.05, 0.05);
         };
 
-        // --- CORE LOGIC ---
+        // --- CORE P5 LOGIC ---
         p.updateAcousticField = (timeFactor, audioFactor) => {
             for (let y = 0; y < FIELD_RESOLUTION; y++) {
                 for (let x = 0; x < FIELD_RESOLUTION; x++) {
@@ -778,5 +1098,16 @@ document.addEventListener('DOMContentLoaded', function() {
     loadSpecimen('AML-2847');
     updateClock();
     setInterval(updateClock, 1000);
+    
+    // Developer Console Flavor
+    console.log("%c AML-SYSTEM v3.1.2 INITIALIZED ", "background: #000; color: #0f0; font-size: 14px; padding: 5px;");
+    const originalError = console.error;
+    console.error = function(...args) {
+        if (args[0] && args[0].includes('404')) {
+            originalError("[MEMORY HOLE] File successfully deleted from public record.");
+        } else {
+            originalError(...args);
+        }
+    };
 
 });
