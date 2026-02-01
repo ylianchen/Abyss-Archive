@@ -1,21 +1,24 @@
-// **FIX**: Wrap all code in a DOMContentLoaded listener
 document.addEventListener('DOMContentLoaded', function() {
 
-    // --- GLOBAL VARIABLES ---
-    let myP5Sketch; // Reference to the p5.js sketch instance
+    // =========================================================================
+    // --- 1. GLOBAL VARIABLES & STATE ---
+    // =========================================================================
     
-    // --- HACKING VARIABLES ---
-    let hackUnlocked = false; // 是否已解锁
-    let breachTimer = null;   // 长按计时器
-    let resetTimer = null;    // 自动重置计时器
+    let myP5Sketch; 
+    let hackUnlocked = false; 
+    let breachTimer = null;   
+    let resetTimer = null;    
     
-    const HACK_TARGET_TIME = 92; // 目标：2092年
-    const HACK_TARGET_DEPTH = 0; // 目标：0% (界面显示为表面，实际是数据源头)
-    // 注意：原本逻辑是 <= 10，现在为了配合解谜音效引导，我们在 checkHackCondition 里微调判定
-    const TOLERANCE = 5;          // 容错范围
-    const RESET_DELAY = 3 * 60 * 1000; // 3分钟后自动重置
+    // Visual Glitch State Trigger
+    let isBreaching = false; 
+    
+    // Hacking Targets (Unlocked at Depth 0%, Time 92)
+    const HACK_TARGET_TIME = 92; 
+    const HACK_TARGET_DEPTH = 0; 
+    const TOLERANCE = 5;          
+    const RESET_DELAY = 3 * 60 * 1000; // Auto-reset after 3 mins
 
-    // --- DATA OBJECTS ---
+    // Data Objects
     const specimenData = {
         'AML-2847': { genetic: 47.3, survival: 0.012, adaptation: 87, stability: -34.2 },
         'ALGO-NVDA': { genetic: 88.1, survival: 0.240, adaptation: 94, stability: -75.8 },
@@ -48,67 +51,217 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // =========================================================================
-    // --- AUDIO ENGINES (Added Features) ---
+    // --- 2. AUDIO ENGINES (Deep Ice + Random Walk + Puzzle) ---
     // =========================================================================
 
-    // 1. Abyss Audio Engine (Phantom Hydrophone)
+    // --- A. ABYSS ENGINE (Ambient Background + Terror Layer) ---
     class AbyssAudioEngine {
         constructor() {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.masterGain = this.ctx.createGain();
             this.masterGain.connect(this.ctx.destination);
-            this.masterGain.gain.value = 0.3; 
+            this.masterGain.gain.value = 0.6; // Master Volume
 
-            this.currentMode = 'SAFE'; 
             this.isInitialized = false;
             
-            this.safeGain = this.ctx.createGain();
-            this.rawGain = this.ctx.createGain();
-            
-            this.safeGain.connect(this.masterGain);
-            this.rawGain.connect(this.masterGain);
+            // Channel 1: Background (Ice/Rumble/Wind) - Always plays
+            this.bgGain = this.ctx.createGain();
+            this.bgGain.connect(this.masterGain);
+            this.bgGain.gain.value = 0; 
 
-            this.safeGain.gain.value = 0;
-            this.rawGain.gain.value = 0;
+            // Channel 2: Terror (Raw Noise) - Only when Depth > 95%
+            this.rawGain = this.ctx.createGain();
+            this.rawGain.connect(this.masterGain);
+            this.rawGain.gain.value = 0; 
         }
 
         async init() {
             if (this.isInitialized) return;
             if (this.ctx.state === 'suspended') await this.ctx.resume();
 
-            this.createSafeLayer();
-            this.createRawLayer();
+            // Start all generators
+            this.createTectonicRumble(); // Deep Rumble (Boosted)
+            this.createWindLayer();      // Wind (Boosted)
+            this.createRawLayer();       // Terror (Standby)
+            this.scheduleIceCrackle();   // Crackle Loop
 
             this.isInitialized = true;
-            console.log("[AUDIO] Abyss Hydrophone Initialized.");
-            this.transitionTo('SAFE');
+            console.log("[AUDIO] Deep Ice Texture Initialized.");
+
+            // Fade in background over 3 seconds
+            this.bgGain.gain.linearRampToValueAtTime(0.7, this.ctx.currentTime + 3);
         }
 
-        createSafeLayer() {
-            const freqs = [220, 277.18, 329.63]; // A Major
-            freqs.forEach(f => {
-                let osc = this.ctx.createOscillator();
-                let gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = f;
-                
-                let lfo = this.ctx.createOscillator();
-                let lfoGain = this.ctx.createGain();
-                lfo.frequency.value = 0.1 + Math.random() * 0.1;
-                lfoGain.gain.value = 2;
-                lfo.connect(lfoGain);
-                lfoGain.connect(osc.frequency);
-                
-                osc.connect(gain);
-                gain.connect(this.safeGain);
-                osc.start();
-                lfo.start();
-                gain.gain.value = 0.3;
-            });
+        // --- LAYER 1: TECTONIC RUMBLE (Randomized Drift) ---
+        createTectonicRumble() {
+            // 1. Sub-bass (Triangle) - The Deep Pressure
+            let osc1 = this.ctx.createOscillator();
+            let gain1 = this.ctx.createGain();
+            let filter1 = this.ctx.createBiquadFilter();
+
+            osc1.type = 'triangle'; 
+            osc1.frequency.value = 35; // Deep sub
+            
+            filter1.type = 'lowpass';
+            filter1.frequency.value = 120; 
+
+            // --- VOLUME BOOSTED x2 (0.5 -> 1.0) ---
+            gain1.gain.value = 1.0; 
+            
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(this.bgGain);
+            osc1.start();
+
+            // 2. Grind (Sawtooth) - The Friction
+            let osc2 = this.ctx.createOscillator();
+            let gain2 = this.ctx.createGain();
+            let filter2 = this.ctx.createBiquadFilter();
+
+            osc2.type = 'sawtooth';
+            osc2.frequency.value = 42; 
+            
+            filter2.type = 'lowpass';
+            filter2.frequency.value = 80;
+
+            // --- VOLUME BOOSTED x2 (0.2 -> 0.4) ---
+            gain2.gain.value = 0.4; 
+
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(this.bgGain);
+            osc2.start();
+
+            // === The Chaos Driver (Random Walk) ===
+            const driftParams = () => {
+                if (!this.isInitialized) return;
+
+                const now = this.ctx.currentTime;
+                const duration = 3 + Math.random() * 5; 
+
+                // Drift Frequencies
+                const targetFreq = 30 + Math.random() * 10;
+                osc1.frequency.linearRampToValueAtTime(targetFreq, now + duration);
+
+                // Drift Volumes (Boosted Ranges)
+                // Sub-bass targets: 0.7 - 1.0 (Very Loud)
+                const targetVol1 = 0.7 + Math.random() * 0.3;
+                gain1.gain.linearRampToValueAtTime(targetVol1, now + duration);
+
+                // Filter Brightness
+                const targetFilter = 60 + Math.random() * 60;
+                filter2.frequency.linearRampToValueAtTime(targetFilter, now + duration);
+
+                // Grind Volume targets: 0.2 - 0.5 (Boosted)
+                const targetVol2 = 0.2 + Math.random() * 0.3;
+                gain2.gain.linearRampToValueAtTime(targetVol2, now + duration);
+
+                setTimeout(driftParams, duration * 1000);
+            };
+
+            driftParams();
         }
 
+        // --- LAYER 2: AMBIENT WIND (Gusty) ---
+        createWindLayer() {
+            let bufferSize = 2 * this.ctx.sampleRate;
+            let noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+            let output = noiseBuffer.getChannelData(0);
+            let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
+            for (let i = 0; i < bufferSize; i++) {
+                let white = Math.random() * 2 - 1;
+                b0 = 0.99886 * b0 + white * 0.0555179;
+                b1 = 0.99332 * b1 + white * 0.0750759;
+                b2 = 0.96900 * b2 + white * 0.1538520;
+                b3 = 0.86650 * b3 + white * 0.3104856;
+                b4 = 0.55000 * b4 + white * 0.5329522;
+                b5 = -0.7616 * b5 - white * 0.0168980;
+                output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                output[i] *= 0.11; 
+                b6 = white * 0.115926;
+            }
+
+            let noiseSrc = this.ctx.createBufferSource();
+            noiseSrc.buffer = noiseBuffer;
+            noiseSrc.loop = true;
+            
+            let noiseFilter = this.ctx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.value = 600; 
+            noiseFilter.Q.value = 1.0; 
+
+            // --- VOLUME BOOSTED x2 (0.1 -> 0.2) ---
+            let windGain = this.ctx.createGain();
+            windGain.gain.value = 0.2; 
+
+            noiseSrc.connect(noiseFilter);
+            noiseFilter.connect(windGain);
+            windGain.connect(this.bgGain);
+            noiseSrc.start();
+
+            // Wind Gust Driver
+            const driftWind = () => {
+                if (!this.isInitialized) return;
+                const now = this.ctx.currentTime;
+                const duration = 5 + Math.random() * 7;
+
+                const targetFreq = 400 + Math.random() * 500;
+                noiseFilter.frequency.exponentialRampToValueAtTime(targetFreq, now + duration);
+
+                const targetQ = 0.5 + Math.random() * 1.5;
+                noiseFilter.Q.linearRampToValueAtTime(targetQ, now + duration);
+
+                setTimeout(driftWind, duration * 1000);
+            };
+
+            driftWind();
+        }
+
+        // --- LAYER 3: CRISP ICE CRACKLES ---
+        scheduleIceCrackle() {
+            if (!this.isInitialized) return;
+            let randomTime = 100 + Math.random() * 700;
+            setTimeout(() => {
+                this.triggerIceCrack();
+                this.scheduleIceCrackle();
+            }, randomTime);
+        }
+
+        triggerIceCrack() {
+            const t = this.ctx.currentTime;
+            let osc = this.ctx.createOscillator();
+            let gain = this.ctx.createGain();
+            let filter = this.ctx.createBiquadFilter();
+
+            let typeRand = Math.random();
+            if (typeRand < 0.33) osc.type = 'sawtooth';
+            else if (typeRand < 0.66) osc.type = 'square';
+            else osc.type = 'triangle';
+
+            osc.frequency.value = 300 + Math.random() * 8000; 
+
+            filter.type = 'highpass';
+            filter.frequency.value = 800;
+
+            const attack = 0.001; 
+            const decay = 0.01 + Math.random() * 0.04; 
+            const volume = 0.02 + Math.random() * 0.15; 
+
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(volume, t + attack); 
+            gain.gain.exponentialRampToValueAtTime(0.001, t + attack + decay); 
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.bgGain);
+
+            osc.start(t);
+            osc.stop(t + attack + decay + 0.1);
+        }
+
+        // --- LAYER 4: TERROR (Raw Feed) ---
         createRawLayer() {
-            // Brown Noise
+            // Brown Noise Drone
             let bufferSize = 2 * this.ctx.sampleRate;
             let noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
             let output = noiseBuffer.getChannelData(0);
@@ -126,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
             noiseFilter.type = 'lowpass';
             noiseFilter.frequency.value = 150; 
             noiseSrc.connect(noiseFilter);
-            noiseFilter.connect(this.rawGain);
+            noiseFilter.connect(this.rawGain); 
             noiseSrc.start();
 
             // Screamer
@@ -142,29 +295,25 @@ document.addEventListener('DOMContentLoaded', function() {
             mod.connect(modGain);
             modGain.connect(screamer.frequency);
             screamer.connect(screamerGain);
-            screamerGain.connect(this.rawGain);
+            screamerGain.connect(this.rawGain); 
             screamer.start();
             mod.start();
             screamerGain.gain.value = 0.05; 
         }
 
-        transitionTo(mode) {
-            if (this.currentMode === mode && this.isInitialized) return;
-            this.currentMode = mode;
+        setRawLayer(isActive) {
+            if (!this.isInitialized) return;
             const now = this.ctx.currentTime;
             const fadeTime = 2.0;
-
-            if (mode === 'RAW') {
-                this.safeGain.gain.linearRampToValueAtTime(0, now + fadeTime);
+            if (isActive) {
                 this.rawGain.gain.linearRampToValueAtTime(0.8, now + fadeTime);
             } else {
-                this.safeGain.gain.linearRampToValueAtTime(0.5, now + fadeTime);
                 this.rawGain.gain.linearRampToValueAtTime(0, now + fadeTime);
             }
         }
     }
 
-    // 2. Puzzle Audio Guidance (Hot/Cold Game)
+    // --- B. PUZZLE GUIDANCE (Geiger Counter Style) ---
     class PuzzleAudioGuidance {
         constructor() {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -209,21 +358,17 @@ document.addEventListener('DOMContentLoaded', function() {
         update(depthVal, timeVal) {
             if (!this.isExposed || this.locked) return;
 
-            // Target values
-            const targetDepth = 0; 
-            const targetTime = 92;
-            
-            // Calculate distance
-            let distDepth = Math.abs(depthVal - targetDepth);
-            let distTime = Math.abs(timeVal - targetTime);
+            // Targets: Depth -> 0, Time -> 92
+            let distDepth = Math.abs(depthVal - HACK_TARGET_DEPTH);
+            let distTime = Math.abs(timeVal - HACK_TARGET_TIME);
 
-            // Activate only when somewhat close
+            // Activate proximity sound within range of 30
             if (distDepth < 30 && distTime < 30) {
                 let proximity = 1 - ((distDepth + distTime) / 60); 
                 proximity = Math.max(0, proximity);
 
-                // Sound mapping
-                this.gain.gain.setTargetAtTime(proximity * 0.15, this.ctx.currentTime, 0.1);
+                // Lower volume (0.075)
+                this.gain.gain.setTargetAtTime(proximity * 0.075, this.ctx.currentTime, 0.1);
                 
                 let pitch = 100 + (proximity * 700);
                 this.osc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.1);
@@ -248,24 +393,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const now = this.ctx.currentTime;
             
+            // Ping (Low volume)
             let osc = this.ctx.createOscillator();
             let gain = this.ctx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(880, now);
             osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1);
-            gain.gain.setValueAtTime(0.3, now);
+            
+            gain.gain.setValueAtTime(0.15, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start();
             osc.stop(now + 0.5);
 
+            // Clunk (Low volume)
             let bass = this.ctx.createOscillator();
             let bassGain = this.ctx.createGain();
             bass.type = 'sawtooth';
             bass.frequency.value = 110;
-            bassGain.gain.setValueAtTime(0.2, now);
+            
+            bassGain.gain.setValueAtTime(0.1, now);
             bassGain.gain.linearRampToValueAtTime(0, now + 0.8);
+            
             bass.connect(bassGain);
             bassGain.connect(this.ctx.destination);
             bass.start();
@@ -278,14 +429,114 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initialize Global Audio Instances
     const abyssAudio = new AbyssAudioEngine();
     const puzzleAudio = new PuzzleAudioGuidance();
 
+    // =========================================================================
+    // --- 3. SYSTEM LOGIC & INTERACTIONS ---
+    // =========================================================================
 
-    // =========================================================================
-    // --- CORE LOGIC & INTERACTION ---
-    // =========================================================================
+    // --- Global Auto-start Audio (First Interaction) ---
+    const startAudioContext = () => {
+        if (abyssAudio && !abyssAudio.isInitialized) {
+            console.log("[SYSTEM] User interaction detected. Engaging ambient audio.");
+            abyssAudio.init().catch(e => console.error(e));
+            
+            document.removeEventListener('click', startAudioContext);
+            document.removeEventListener('keydown', startAudioContext);
+            document.removeEventListener('touchstart', startAudioContext);
+        }
+    };
+    document.addEventListener('click', startAudioContext);
+    document.addEventListener('keydown', startAudioContext);
+    document.addEventListener('touchstart', startAudioContext);
+
+    // --- Slider Handlers ---
+
+    window.updateDepth = function(value) {
+        const val = parseInt(value);
+        document.getElementById('depth-value').textContent = val;
+        
+        checkHackCondition(); 
+        
+        // Terror Layer Trigger (>95%)
+        if (val > 95) {
+            abyssAudio.setRawLayer(true);
+            const audioStatus = document.getElementById('p5-audio-status');
+            if(audioStatus) {
+                audioStatus.textContent = "⚠ HYDROPHONE: RAW FEED";
+                audioStatus.style.color = "#ff4136";
+                audioStatus.style.animation = "blink 0.5s infinite";
+            }
+        } else {
+            abyssAudio.setRawLayer(false);
+            const audioStatus = document.getElementById('p5-audio-status');
+            if(audioStatus) {
+                audioStatus.textContent = "HYDROPHONE: FILTERED";
+                audioStatus.style.color = ""; 
+                audioStatus.style.animation = "";
+            }
+        }
+    }
+
+    window.updateTime = function(value) {
+        document.getElementById('time-value').textContent = value;
+        checkHackCondition(); 
+    }
+    
+    window.updatePH = function(value) {
+        document.getElementById('ph-value').textContent = value;
+    }
+
+    // --- Hacking Logic ---
+
+    function checkHackCondition() {
+        if (hackUnlocked) return; 
+
+        const depthVal = parseInt(document.getElementById('depth-slider').value);
+        const timeVal = parseInt(document.getElementById('time-slider').value);
+
+        // Update Puzzle Audio (Geiger Counter)
+        puzzleAudio.start();
+        puzzleAudio.update(depthVal, timeVal);
+
+        // Check if targets met
+        const isTimeCorrect = Math.abs(timeVal - HACK_TARGET_TIME) <= TOLERANCE;
+        const isDepthCorrect = depthVal <= 10; 
+
+        const statusLight = document.getElementById('system-status-light');
+        const statusText = document.getElementById('system-status-text');
+        
+        if (!statusLight) return;
+
+        if (isTimeCorrect && isDepthCorrect) {
+            if (!statusLight.classList.contains('critical-error')) {
+                // Play Lock Sound
+                puzzleAudio.playLockSound();
+                
+                statusLight.classList.add('critical-error');
+                if(statusText) {
+                    statusText.textContent = "FATAL ERROR";
+                    statusText.style.color = "#ff4136";
+                }
+                console.log("[HACK] Condition Met. Waiting for manual override...");
+            }
+        } else {
+            if (statusLight.classList.contains('critical-error')) {
+                // Lost lock, reset audio guidance
+                puzzleAudio.reset();
+                puzzleAudio.start();
+
+                statusLight.classList.remove('critical-error');
+                if(statusText) {
+                    statusText.textContent = "SYSTEM ONLINE";
+                    statusText.style.color = "";
+                }
+            }
+        }
+    }
+
+    // --- Specimen Navigation ---
 
     window.loadSpecimen = function(id) {
         if (id === 'SYS-LOG' && !hackUnlocked) return;
@@ -300,10 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
              clickedItem = document.querySelector(`.specimen-item[onclick="loadSpecimen('${id}')"]`);
         }
-        
-        if (clickedItem) {
-            clickedItem.classList.add('active');
-        }
+        if (clickedItem) clickedItem.classList.add('active');
         
         const specimenContent = document.getElementById('specimen-content');
         const systemLogContent = document.getElementById('system-log-content');
@@ -316,15 +564,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             if (specimenContent) specimenContent.style.display = 'block';
             if (systemLogContent) systemLogContent.style.display = 'none';
-
-            if (specimenData[id]) {
-                updateDataDisplay(specimenData[id], id);
-            }
-            if (myP5Sketch) {
-                myP5Sketch.setVisMode(id);
-            }
+            if (specimenData[id]) updateDataDisplay(specimenData[id], id);
+            if (myP5Sketch) myP5Sketch.setVisMode(id);
         }
-        console.log('Loading section:', id);
     }
 
     function updateDataDisplay(data, id) {
@@ -334,13 +576,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (dataBoxes.length > 3) {
             dataBoxes[0].querySelector('.data-box-value').textContent = data.genetic + '%';
             dataBoxes[0].querySelector('.data-box-bar-fill').style.width = data.genetic + '%';
-            
             dataBoxes[1].querySelector('.data-box-value').textContent = data.survival + '%';
             dataBoxes[1].querySelector('.data-box-bar-fill').style.width = (data.survival * 100) + '%';
-            
             dataBoxes[2].querySelector('.data-box-value').textContent = (data.adaptation / 10).toFixed(1) + '/10';
             dataBoxes[2].querySelector('.data-box-bar-fill').style.width = data.adaptation + '%';
-            
             dataBoxes[3].querySelector('.data-box-value').textContent = data.stability + '%';
             const barFill = dataBoxes[3].querySelector('.data-box-bar-fill');
             barFill.style.width = Math.abs(data.stability) + '%';
@@ -371,94 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- SLIDER UPDATES & LOGIC ---
-
-    window.updateDepth = function(value) {
-        document.getElementById('depth-value').textContent = value;
-        
-        // 1. Hack Check & Puzzle Audio Update
-        checkHackCondition(); 
-        
-        // 2. Phantom Hydrophone Logic
-        if (!abyssAudio.isInitialized) {
-            abyssAudio.init().catch(e => console.log("Audio waiting for gesture..."));
-        }
-        // If Depth > 95%, activate RAW mode
-        if (parseInt(value) > 95) {
-            abyssAudio.transitionTo('RAW');
-            const audioStatus = document.getElementById('p5-audio-status');
-            if(audioStatus) {
-                audioStatus.textContent = "⚠ HYDROPHONE: RAW FEED";
-                audioStatus.style.color = "#ff4136";
-                audioStatus.style.animation = "blink 0.5s infinite";
-            }
-        } else {
-            abyssAudio.transitionTo('SAFE');
-            const audioStatus = document.getElementById('p5-audio-status');
-            if(audioStatus) {
-                audioStatus.textContent = "HYDROPHONE: FILTERED";
-                audioStatus.style.color = ""; 
-                audioStatus.style.animation = "";
-            }
-        }
-    }
-
-    window.updatePH = function(value) {
-        document.getElementById('ph-value').textContent = value;
-    }
-
-    window.updateTime = function(value) {
-        document.getElementById('time-value').textContent = value;
-        checkHackCondition(); 
-    }
-
-    function checkHackCondition() {
-        if (hackUnlocked) return; 
-
-        const depthVal = parseInt(document.getElementById('depth-slider').value);
-        const timeVal = parseInt(document.getElementById('time-slider').value);
-
-        // --- Puzzle Audio Update ---
-        puzzleAudio.start();
-        puzzleAudio.update(depthVal, timeVal);
-        // ---------------------------
-
-        // Target: Time near 92, Depth near 0 ( <= 10 for original logic, we keep it consistent)
-        // If you want strictly 0 for the puzzle sound, logic below handles <= 10
-        const isTimeCorrect = Math.abs(timeVal - HACK_TARGET_TIME) <= TOLERANCE;
-        const isDepthCorrect = depthVal <= 10; 
-
-        const statusLight = document.getElementById('system-status-light');
-        const statusText = document.getElementById('system-status-text');
-        
-        if (!statusLight) return;
-
-        if (isTimeCorrect && isDepthCorrect) {
-            if (!statusLight.classList.contains('critical-error')) {
-                // Play Lock Sound
-                puzzleAudio.playLockSound();
-                
-                statusLight.classList.add('critical-error');
-                if(statusText) {
-                    statusText.textContent = "FATAL ERROR";
-                    statusText.style.color = "#ff4136";
-                }
-                console.log("[HACK] Condition Met. Waiting for manual override...");
-            }
-        } else {
-            if (statusLight.classList.contains('critical-error')) {
-                // Unlock lost, reset guidance
-                puzzleAudio.reset();
-                puzzleAudio.start();
-
-                statusLight.classList.remove('critical-error');
-                if(statusText) {
-                    statusText.textContent = "SYSTEM ONLINE";
-                    statusText.style.color = "";
-                }
-            }
-        }
-    }
+    // --- Unlock & Reset Logic ---
 
     function setupStatusLightInteraction() {
         const statusLight = document.getElementById('system-status-light');
@@ -472,7 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log("[HACK] Initiating breach...");
             playGlitchSound(true); 
-
             if(statusText) statusText.textContent = "OVERRIDING...";
             
             breachTimer = setTimeout(() => {
@@ -487,7 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 breachTimer = null;
             }
             playGlitchSound(false); 
-            
             if (statusLight.classList.contains('critical-error') && statusText) {
                 statusText.textContent = "FATAL ERROR";
             }
@@ -495,7 +645,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         statusLight.addEventListener('mousedown', startBreach);
         statusLight.addEventListener('touchstart', startBreach);
-        
         document.addEventListener('mouseup', endBreach);
         document.addEventListener('touchend', endBreach);
     }
@@ -504,8 +653,13 @@ document.addEventListener('DOMContentLoaded', function() {
         hackUnlocked = true;
         clearTimeout(breachTimer);
         playGlitchSound(false);
-
         console.log("[HACK] SYSTEM BREACH SUCCESSFUL");
+
+        // [UPDATED] Trigger Glitch for 0.5s ONLY
+        isBreaching = true;
+        setTimeout(() => {
+            isBreaching = false;
+        }, 200); // Stop glitch after 500ms
 
         const overlay = document.getElementById('breach-overlay');
         if(overlay) overlay.classList.add('breach-active');
@@ -514,7 +668,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const statusLight = document.getElementById('system-status-light');
         const statusText = document.getElementById('system-status-text');
-        
         if(statusLight) {
             statusLight.classList.remove('critical-error');
             statusLight.style.backgroundColor = "black";
@@ -546,33 +699,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetSystem() {
         console.log("[SYS] Performing System Reset...");
         hackUnlocked = false;
+        isBreaching = false;
 
-        // Reset Audio
-        puzzleAudio.reset();
+        puzzleAudio.reset(); // Reset Audio
         
         const depthSlider = document.getElementById('depth-slider');
         const timeSlider = document.getElementById('time-slider');
-        
-        if (depthSlider) {
-            depthSlider.value = 50; 
-            document.getElementById('depth-value').textContent = 50;
-        }
-        if (timeSlider) {
-            timeSlider.value = 80;
-            document.getElementById('time-value').textContent = 80;
-        }
+        if (depthSlider) { depthSlider.value = 50; document.getElementById('depth-value').textContent = 50; }
+        if (timeSlider) { timeSlider.value = 80; document.getElementById('time-value').textContent = 80; }
 
         const statusLight = document.getElementById('system-status-light');
         const statusText = document.getElementById('system-status-text');
-        
-        if(statusLight) {
-            statusLight.classList.remove('critical-error');
-            statusLight.style.backgroundColor = ""; 
-        }
-        if(statusText) {
-            statusText.textContent = "SYSTEM ONLINE";
-            statusText.style.color = "";
-        }
+        if(statusLight) { statusLight.classList.remove('critical-error'); statusLight.style.backgroundColor = ""; }
+        if(statusText) { statusText.textContent = "SYSTEM ONLINE"; statusText.style.color = ""; }
 
         const kernelTab = document.getElementById('sys-kernel-tab');
         if(kernelTab) {
@@ -586,8 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(overlay) overlay.classList.remove('breach-active');
 
         loadSpecimen('AML-2847');
-        
-        console.log("[SYS] Reset Complete. Simulation restarted.");
+        console.log("[SYS] Reset Complete.");
     }
 
     function updateClock() {
@@ -597,95 +735,68 @@ document.addEventListener('DOMContentLoaded', function() {
         const minutes = now.getMinutes().toString().padStart(2, '0');
         const seconds = now.getSeconds().toString().padStart(2, '0');
         const timeString = `${hours}:${minutes}:${seconds}`;
-        const dateTimeString = `${year}.${month}.${day} ${timeString} UTC`;
         
         const currentTimeEl = document.getElementById('current-time');
-        if (currentTimeEl) currentTimeEl.textContent = dateTimeString;
-        
+        if (currentTimeEl) currentTimeEl.textContent = `${year}.${month}.${day} ${timeString} UTC`;
         const updateTimeEl = document.getElementById('update-time');
         if (updateTimeEl) updateTimeEl.textContent = timeString;
-        
         const logClock = document.getElementById('update-time-log');
-        if (logClock && logClock.offsetParent !== null) {
-            logClock.textContent = timeString;
-        }
+        if (logClock) logClock.textContent = timeString;
     }
 
+    // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
         if (e.key >= '1' && e.key <= '5') {
             const sections = ['AML-2847', 'ALGO-NVDA', 'ALGO-SENT', 'ALGO-GOOG', 'SYS-LOG'];
             const index = parseInt(e.key) - 1;
-            if (sections[index]) {
-                loadSpecimen(sections[index]);
-            }
+            if (sections[index]) loadSpecimen(sections[index]);
         }
-        if (e.key === 'r' || e.key === 'R') {
-            resetSystem();
-        }
-        if (e.key === 'a' || e.key === 'A') {
-            if (myP5Sketch) myP5Sketch.toggleAudio();
-        }
+        if (e.key === 'r' || e.key === 'R') resetSystem();
+        if (e.key === 'a' || e.key === 'A') if (myP5Sketch) myP5Sketch.toggleAudio();
     });
 
-    // --- GENERIC AUDIO UTILS (Used for Breach Sound) ---
-    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    let osc = null;
-    let gainNode = null;
+    // Simple Audio Utils (For Glitch/Success effects)
+    let simpleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let sOsc = null;
+    let sGain = null;
 
     function playGlitchSound(active) {
         if (active) {
-            if (osc) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            osc = audioCtx.createOscillator();
-            gainNode = audioCtx.createGain();
-            
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-            osc.frequency.linearRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
-            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.3);
-            
-            let lfo = audioCtx.createOscillator();
-            lfo.type = 'square';
-            lfo.frequency.value = 30; 
-            let lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 500;
-            lfo.connect(lfoGain);
-            lfoGain.connect(osc.frequency);
+            if (sOsc) return;
+            if (simpleAudioCtx.state === 'suspended') simpleAudioCtx.resume();
+            sOsc = simpleAudioCtx.createOscillator();
+            sGain = simpleAudioCtx.createGain();
+            sOsc.type = 'sawtooth';
+            sOsc.frequency.setValueAtTime(100, simpleAudioCtx.currentTime);
+            sOsc.frequency.linearRampToValueAtTime(800, simpleAudioCtx.currentTime + 0.1);
+            sOsc.frequency.linearRampToValueAtTime(1200, simpleAudioCtx.currentTime + 0.3);
+            let lfo = simpleAudioCtx.createOscillator();
+            lfo.type = 'square'; lfo.frequency.value = 30; 
+            let lfoGain = simpleAudioCtx.createGain(); lfoGain.gain.value = 500;
+            lfo.connect(lfoGain); lfoGain.connect(sOsc.frequency);
             lfo.start();
-
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            osc.start();
+            sGain.gain.setValueAtTime(0.1, simpleAudioCtx.currentTime);
+            sOsc.connect(sGain); sGain.connect(simpleAudioCtx.destination);
+            sOsc.start();
         } else {
-            if (osc) {
-                osc.stop();
-                osc.disconnect();
-                osc = null;
-            }
+            if (sOsc) { sOsc.stop(); sOsc.disconnect(); sOsc = null; }
         }
     }
-
     function playSuccessSound() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        let sOsc = audioCtx.createOscillator();
-        let sGain = audioCtx.createGain();
-        sOsc.type = 'sine';
-        sOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
-        sOsc.frequency.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
-        sGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        sGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
-        sOsc.connect(sGain);
-        sGain.connect(audioCtx.destination);
-        sOsc.start();
-        sOsc.stop(audioCtx.currentTime + 1.5);
+        if (simpleAudioCtx.state === 'suspended') simpleAudioCtx.resume();
+        let osc = simpleAudioCtx.createOscillator();
+        let gain = simpleAudioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(200, simpleAudioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(0.01, simpleAudioCtx.currentTime + 1.5);
+        gain.gain.setValueAtTime(0.3, simpleAudioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, simpleAudioCtx.currentTime + 1.5);
+        osc.connect(gain); gain.connect(simpleAudioCtx.destination);
+        osc.start(); osc.stop(simpleAudioCtx.currentTime + 1.5);
     }
 
     // =========================================================================
-    // --- P5.JS SKETCH (with Data Rot) ---
+    // --- 4. P5.JS SKETCH (VISUALIZATION + BREACH GLITCH) ---
     // =========================================================================
 
     const p5_sketch = ( p ) => {
@@ -702,42 +813,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const FIELD_RESOLUTION = 60, MAX_RIPPLES = 15, MAX_PARAM_BOXES = 30;
         let mouseX_el, mouseY_el, inputStatus_el, fps_el, audioStatus_el;
         
-        // --- DATA ROT VARIABLES ---
+        // Data Rot Vars
         let entropy = 0;
-        const ENTROPY_THRESHOLD = 120; // Approx 2 seconds of idleness
-        // --------------------------
+        const ENTROPY_THRESHOLD = 120; // 2 seconds idle
 
         p.setup = () => {
             container = document.getElementById('p5-container');
             if(container) {
                 canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
                 canvas.parent('p5-container');
-                
                 pg = p.createGraphics(p.width, p.height);
                 p.pixelDensity(1);
-                
                 for (let i = 0; i < FIELD_RESOLUTION * FIELD_RESOLUTION; i++) acousticField[i] = 0;
                 for (let i = 0; i < 12; i++) parameterBoxes.push(new ParameterBox(p));
-
                 mouseX_el = document.getElementById('mouse-x');
                 mouseY_el = document.getElementById('mouse-y');
                 inputStatus_el = document.getElementById('p5-input-status');
                 fps_el = document.getElementById('p5-fps');
                 audioStatus_el = document.getElementById('p5-audio-status');
-
                 if (inputStatus_el) inputStatus_el.textContent = "MOUSE";
                 p.textFont('Trebuchet MS, Lucida Grande, sans-serif');
             }
         };
 
         p.draw = () => {
-            if (p.frameCount % 30 === 0) {
-                if(fps_el) fps_el.textContent = p.frameRate().toFixed(0);
-            }
+            if (p.frameCount % 30 === 0) if(fps_el) fps_el.textContent = p.frameRate().toFixed(0);
             if(mouseX_el) mouseX_el.textContent = p.mouseX.toFixed(0);
             if(mouseY_el) mouseY_el.textContent = p.mouseY.toFixed(0);
 
-            // Draw normal visualization
+            // Draw Modes
             switch(currentVisMode) {
                 case 'AML-2847': p.drawModeDefault(); break;
                 case 'ALGO-NVDA': p.drawModeNVDA(); break;
@@ -746,56 +850,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 default: p.drawModeDefault();
             }
 
-            // === [DATA ROT LOGIC] ===
+            // === VISUAL GLITCH LOGIC (Data Rot + Breach) ===
             
-            // 1. Calculate Entropy
+            let activeIntensity = 0;
+
+            // 1. Calculate Standard Entropy (Idle)
             if (p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY) < 1) {
                 entropy++;
             } else {
-                // Reset if mouse moves
-                if (entropy > 0) {
+                if (entropy > 0 && !isBreaching) {
                     entropy = 0;
                     document.body.style.filter = '';
                     document.body.style.transform = '';
                     document.body.style.opacity = '';
                 }
             }
-
-            // 2. Apply Effects
             if (entropy > ENTROPY_THRESHOLD) {
-                let intensity = (entropy - ENTROPY_THRESHOLD) * 0.1;
-                intensity = p.constrain(intensity, 0, 30); // Mild Cap
+                activeIntensity = (entropy - ENTROPY_THRESHOLD) * 0.1;
+                activeIntensity = p.constrain(activeIntensity, 0, 30);
+            }
 
-                // A. Canvas Glitch (Scanlines)
-                if (p.random(100) < intensity) {
-                    let y = p.floor(p.random(p.height));
-                    let h = p.floor(p.random(2, 30));
-                    let xOffset = p.random(-15, 15) * (intensity / 5);
-                    let slice = p.get(0, y, p.width, h);
-                    p.image(slice, xOffset, y);
+            // 2. OVERRIDE: Breach Mode (Max Chaos)
+            if (isBreaching) {
+                activeIntensity = 100; // Force Max Intensity
+                entropy = ENTROPY_THRESHOLD + 1000; // Prevent reset
+            }
+
+            // 3. Apply Effects
+            if (activeIntensity > 0) {
+                
+                // A. Canvas Slicing
+                let loopCount = isBreaching ? 5 : 1; 
+                
+                for(let i=0; i<loopCount; i++) {
+                    if (p.random(100) < activeIntensity) {
+                        let y = p.floor(p.random(p.height));
+                        let h = p.floor(p.random(2, isBreaching ? 80 : 30)); 
+                        let xOffset = p.random(-15, 15) * (activeIntensity / 5);
+                        let slice = p.get(0, y, p.width, h);
+                        p.image(slice, xOffset, y);
+                    }
                 }
 
-                // B. DOM Decay (Mild Shake & Filter)
-                let shakeX = p.random(-1, 1) * (intensity * 0.02);
-                let shakeY = p.random(-1, 1) * (intensity * 0.02);
+                // B. Breach Specific: Invert & Color Separations
+                if (isBreaching && p.frameCount % 4 === 0) {
+                    p.filter(p.POSTERIZE, 4);
+                    if(p.random() > 0.8) p.filter(p.INVERT); 
+                }
+
+                // C. DOM Corruption (CSS)
+                let shakeX = p.random(-1, 1) * (activeIntensity * 0.05); 
+                let shakeY = p.random(-1, 1) * (activeIntensity * 0.05);
                 
-                let sat = p.map(intensity, 0, 30, 0.9, 0.4); 
-                let cont = p.map(intensity, 0, 30, 1, 1.2);
-                let blur = p.map(intensity, 0, 30, 0, 1.5);
+                let sat = p.map(activeIntensity, 0, 30, 0.9, 0.4); 
+                let cont = p.map(activeIntensity, 0, 30, 1, 1.2);
+                let blur = p.map(activeIntensity, 0, 30, 0, 1.5);
                 let hue = 0;
-                
-                if (intensity > 25) {
-                    hue = p.random(-5, 5); 
+                let skew = 0;
+
+                if (activeIntensity > 50) {
+                    hue = p.random(-90, 90);
+                    sat = 2; cont = 2; blur = 0; 
+                    skew = p.random(-2, 2); 
+                } else if (activeIntensity > 25) {
+                    hue = p.random(-5, 5);
                 }
 
-                document.body.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
+                document.body.style.transform = `translate(${shakeX}px, ${shakeY}px) skewX(${skew}deg)`;
                 document.body.style.filter = `saturate(${sat}) contrast(${cont}) blur(${blur}px) hue-rotate(${hue}deg)`;
 
-                if (entropy % 300 === 0) {
-                     console.warn(`[SYS_CRITICAL] Reality Integrity dropping... ${(100 - intensity*2).toFixed(1)}%`);
+                if (isBreaching && p.frameCount % 10 === 0) {
+                     document.body.style.backgroundColor = p.random() > 0.5 ? '#110000' : '#000000';
                 }
+            } else {
+                 document.body.style.backgroundColor = '';
             }
-            // ========================
         };
 
         p.windowResized = () => {
@@ -818,33 +947,18 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         p.toggleAudio = () => {
-            if (p.getAudioContext().state !== 'running') {
-                p.getAudioContext().resume().catch(e => console.error("Audio resume failed:", e));
-            }
+            if (p.getAudioContext().state !== 'running') p.getAudioContext().resume();
             audioEnabled = !audioEnabled;
             if (audioEnabled) {
-                if (!mic) { 
-                    mic = new p5.AudioIn();
-                    mic.start(() => {
-                        if(audioStatus_el) audioStatus_el.textContent = "ENABLED";
-                        if(inputStatus_el) inputStatus_el.textContent = "AUDIO";
-                    }, (e) => {
-                        if(audioStatus_el) audioStatus_el.textContent = "ERROR";
-                        audioEnabled = false;
-                    });
-                } else {
-                    mic.start(); 
-                    if(audioStatus_el) audioStatus_el.textContent = "ENABLED";
-                    if(inputStatus_el) inputStatus_el.textContent = "AUDIO";
-                }
-            } else if (!audioEnabled && mic) {
-                mic.stop();
-                if(audioStatus_el) audioStatus_el.textContent = "DISABLED";
+                if (!mic) { mic = new p5.AudioIn(); mic.start(); } else { mic.start(); }
+                if(inputStatus_el) inputStatus_el.textContent = "AUDIO";
+            } else {
+                if (mic) mic.stop();
                 if(inputStatus_el) inputStatus_el.textContent = "MOUSE";
             }
         };
 
-        // --- VISUALIZATION MODES (Unchanged) ---
+        // --- Visual Modes Impl (Standard) ---
         p.drawModeDefault = () => {
             p.background(0); time++;
             if (audioEnabled && mic) audioLevel = mic.getLevel();
@@ -896,7 +1010,6 @@ document.addEventListener('DOMContentLoaded', function() {
             p.drawWaveformBox(200, 255, 200, 0.08, 0.05, 0.05);
         };
 
-        // --- CORE P5 LOGIC ---
         p.updateAcousticField = (timeFactor, audioFactor) => {
             for (let y = 0; y < FIELD_RESOLUTION; y++) {
                 for (let x = 0; x < FIELD_RESOLUTION; x++) {
@@ -986,45 +1099,28 @@ document.addEventListener('DOMContentLoaded', function() {
             p.pop();
         };
 
-        // --- EVENT HANDLERS ---
+        // Handlers
         p.mousePressed = (event) => {
-            if (p.getAudioContext().state !== 'running') {
-                 p.getAudioContext().resume().catch(e => console.error("Audio resume failed:", e));
-            }
+            if (p.getAudioContext().state !== 'running') p.getAudioContext().resume();
             if (event.target !== canvas.elt) return;
-            if (detectionRipples.length < MAX_RIPPLES) {
-                detectionRipples.push(new AcousticRipple(p, pg, p.mouseX, p.mouseY, p.random(0.5, 1)));
-            }
-            if (parameterBoxes.length < MAX_PARAM_BOXES && p.random() > 0.3) {
-                let box = new ParameterBox(p);
-                box.x = p.mouseX + p.random(-80, 80); box.y = p.mouseY + p.random(-80, 80);
-                box.x = p.constrain(box.x, 20, p.width - box.w - 20);
-                box.y = p.constrain(box.y, 20, p.height - 200);
-                parameterBoxes.push(box);
-            }
+            if (detectionRipples.length < MAX_RIPPLES) detectionRipples.push(new AcousticRipple(p, pg, p.mouseX, p.mouseY, p.random(0.5, 1)));
         };
         p.mouseDragged = () => {
             if (p.mouseX < 0 || p.mouseY < 0 || p.mouseX > p.width || p.mouseY > p.height) return;
-            if (p.frameCount % 5 === 0 && detectionRipples.length < MAX_RIPPLES) {
-                detectionRipples.push(new AcousticRipple(p, pg, p.mouseX, p.mouseY, p.random(0.3, 0.7)));
-            }
+            if (p.frameCount % 5 === 0 && detectionRipples.length < MAX_RIPPLES) detectionRipples.push(new AcousticRipple(p, pg, p.mouseX, p.mouseY, p.random(0.3, 0.7)));
         };
     };
 
-    // --- P5.JS CLASSES ---
     class AcousticRipple {
         constructor(p, pg, x, y, intensity) {
             this.p = p; this.pg = pg; this.x = x; this.y = y;
             this.radius = 0; this.maxRadius = p.random(100, 300);
             this.intensity = intensity; this.age = 0; this.maxAge = 120;
         }
-        update() {
-            this.age++; this.radius += this.maxRadius / this.maxAge; this.intensity *= 0.97;
-        }
+        update() { this.age++; this.radius += this.maxRadius / this.maxAge; this.intensity *= 0.97; }
         display(r, g, b) {
             let alpha = this.p.map(this.age, 0, this.maxAge, 255, 0);
-            this.pg.noFill();
-            this.pg.stroke(r, g, b, alpha * this.intensity); this.pg.strokeWeight(2);
+            this.pg.noFill(); this.pg.stroke(r, g, b, alpha * this.intensity); this.pg.strokeWeight(2);
             this.pg.circle(this.x, this.y, this.radius * 2);
             this.pg.stroke(r, g, b, alpha * 0.5 * this.intensity); this.pg.strokeWeight(1);
             this.pg.circle(this.x, this.y, this.radius * 1.5);
@@ -1033,14 +1129,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     class ParameterBox {
         constructor(p) {
-            this.p = p;
-            this.x = p.random(p.width * 0.05, p.width * 0.95);
-            this.y = p.random(p.height * 0.05, p.height * 0.65);
+            this.p = p; this.x = p.random(p.width * 0.05, p.width * 0.95); this.y = p.random(p.height * 0.05, p.height * 0.65);
             this.w = p.random(70, 140); this.h = p.random(35, 60);
             this.numbers = this.generateNumbers();
             this.age = 0; this.maxAge = p.random(120, 240);
-            this.blinkPhase = p.random(p.TWO_PI);
-            this.updateInterval = p.floor(p.random(40, 80));
+            this.blinkPhase = p.random(p.TWO_PI); this.updateInterval = p.floor(p.random(40, 80));
         }
         generateNumbers() {
             const p = this.p;
@@ -1049,65 +1142,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 () => p.random(0, 999).toFixed(p.random([1, 2, 3])),
                 () => { let h = p.floor(p.random(0, 65535)).toString(16).toUpperCase(); return '0x' + h.padStart(4, '0'); }
             ];
-            let numCount = p.floor(p.random(1, 4));
-            let nums = [];
+            let numCount = p.floor(p.random(1, 4)); let nums = [];
             for (let i = 0; i < numCount; i++) nums.push(p.random(formats)());
             return nums;
         }
         update() {
-            this.age++;
-            if (this.age % this.updateInterval === 0 && this.p.random() > 0.5) {
-                this.numbers[this.p.floor(this.p.random(this.numbers.length))] = this.generateNumbers()[0];
-            }
+            this.age++; if (this.age % this.updateInterval === 0 && this.p.random() > 0.5) this.numbers[this.p.floor(this.p.random(this.numbers.length))] = this.generateNumbers()[0];
             this.blinkPhase += 0.08;
         }
         display() {
-            const p = this.p;
-            let blink = p.sin(this.blinkPhase) * 0.4 + 0.6;
-            p.push();
-            p.noFill(); p.stroke(0, 255, 65, 150); p.strokeWeight(1);
+            const p = this.p; let blink = p.sin(this.blinkPhase) * 0.4 + 0.6;
+            p.push(); p.noFill(); p.stroke(0, 255, 65, 150); p.strokeWeight(1);
             p.rect(this.x, this.y, this.w, this.h);
             p.stroke(0, 255, 65, 200); p.strokeWeight(2); let cs = 5;
             p.line(this.x, this.y, this.x + cs, this.y); p.line(this.x, this.y, this.x, this.y + cs);
             p.line(this.x + this.w, this.y, this.x + this.w - cs, this.y); p.line(this.x + this.w, this.y, this.x + this.w, this.y + cs);
-            p.drawingContext.save();
-            p.drawingContext.rect(this.x + 2, this.y + 2, this.w - 4, this.h - 4);
-            p.drawingContext.clip();
+            p.drawingContext.save(); p.drawingContext.rect(this.x + 2, this.y + 2, this.w - 4, this.h - 4); p.drawingContext.clip();
             p.noStroke(); p.fill(0, 255, 65, 200 * blink); p.textAlign(p.CENTER, p.CENTER);
-            let totalHeight = (this.numbers.length - 1) * 15;
-            let startY = this.y + this.h / 2 - totalHeight / 2;
-            for (let i = 0; i < this.numbers.length; i++) {
-                p.textSize(this.numbers.length === 1 ? 15 : 12);
-                p.text(this.numbers[i], this.x + this.w / 2, startY + i * 15);
-            }
+            let totalHeight = (this.numbers.length - 1) * 15; let startY = this.y + this.h / 2 - totalHeight / 2;
+            for (let i = 0; i < this.numbers.length; i++) { p.textSize(this.numbers.length === 1 ? 15 : 12); p.text(this.numbers[i], this.x + this.w / 2, startY + i * 15); }
             p.drawingContext.restore();
-            if (p.random() > 0.95) {
-                p.stroke(0, 255, 65, p.random(100, 200)); p.strokeWeight(1);
-                p.line(this.x, this.y + p.random(this.h), this.x + this.w, this.y + p.random(this.h));
-            }
+            if (p.random() > 0.95) { p.stroke(0, 255, 65, p.random(100, 200)); p.strokeWeight(1); p.line(this.x, this.y + p.random(this.h), this.x + this.w, this.y + p.random(this.h)); }
             p.pop();
         }
         isDead() { return this.age >= this.maxAge; }
     }
 
-    // --- INITIALIZATION ---
+    // --- INIT ---
     myP5Sketch = new p5(p5_sketch, 'p5-container');
-    
     setupStatusLightInteraction();
-    
     loadSpecimen('AML-2847');
     updateClock();
     setInterval(updateClock, 1000);
     
-    // Developer Console Flavor
     console.log("%c AML-SYSTEM v3.1.2 INITIALIZED ", "background: #000; color: #0f0; font-size: 14px; padding: 5px;");
     const originalError = console.error;
     console.error = function(...args) {
-        if (args[0] && args[0].includes('404')) {
-            originalError("[MEMORY HOLE] File successfully deleted from public record.");
-        } else {
-            originalError(...args);
-        }
+        if (args[0] && args[0].includes('404')) originalError("[MEMORY HOLE] File deleted from record.");
+        else originalError(...args);
     };
 
 });
