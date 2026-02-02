@@ -1183,3 +1183,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 });
+
+// =========================================================================
+    // --- SECURITY PROTOCOL: DISABLE CONTEXT MENU ---
+    // =========================================================================
+    
+    document.addEventListener('contextmenu', (event) => {
+        event.preventDefault(); // 阻止默认的右键菜单弹出
+    });

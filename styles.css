@@ -21,6 +21,14 @@ body {
     /* Reduce overall color saturation site-wide. Adjust --site-saturation (1 = original, 0 = grayscale) */
     --site-saturation: 0.7;
     filter: saturate(var(--site-saturation));
+    /* [新增] 禁止文本选中 */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* IE10+/Edge */
+    user-select: none;         /* Standard */
+    
+    /* [新增] 禁止图片拖拽 (防止把图片拖出浏览器) */
+    -webkit-user-drag: none;
 }
 
 /* CRT Monitor Effects */
